@@ -98,74 +98,121 @@ class Organism {
     this.x = x;
     this.y = y;
     this.angle = Math.random() * Math.PI * 2;
-    this.energy = Math.random() * 100;
-    this.size = 1;
-    this.hue = Math.random() * 360;
+    this.energy = 80 + Math.random() * 60;
+    this.radius = 0.5 + Math.random() * 1.5;
+    this.hue = 120 + Math.random() * 120; // fungal / bio-neural range
+    this.thickness = 0.3 + Math.random() * 0.8;
+    this.branchChance = 0.003;
   }
 
   step() {
-    const tempFactor = climate.temp * 0.03;
-    const humidFactor = climate.humidity * 0.01;
+    const temp = climate.temp * 0.02;
+    const humid = climate.humidity * 0.015;
 
-    this.angle += (Math.random() - 0.5) * humidFactor;
-    this.x += Math.cos(this.angle) * tempFactor;
-    this.y += Math.sin(this.angle) * tempFactor;
+    // mycelium-like wandering
+    this.angle += (Math.random() - 0.5) * humid;
+    const dx = Math.cos(this.angle) * temp * 2;
+    const dy = Math.sin(this.angle) * temp * 2;
 
-    this.energy -= 0.2;
-    this.size += 0.005;
-    this.hue += climate.wind * 0.3;
+    // organic tissue tube
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(this.x + dx, this.y + dy);
+    ctx.strokeStyle = `hsla(${this.hue}, 70%, 60%, 0.35)`;
+    ctx.lineWidth = this.thickness;
+    ctx.stroke();
 
-    if (Math.random() < 0.002 * humidFactor) {
-      organisms.push(new Organism(this.x, this.y));
-      bioSound(100 + climate.temp * 4, 0.2, humidFactor);
+    this.x += dx;
+    this.y += dy;
+
+    this.energy -= 0.3;
+    this.thickness *= 0.999;
+    this.hue += climate.wind * 0.2;
+
+    // fungal branching
+    if (Math.random() < this.branchChance * humid) {
+      const child = new Organism(this.x, this.y);
+      child.angle = this.angle + (Math.random() - 0.5) * Math.PI / 2;
+      child.thickness = this.thickness * 0.8;
+      organisms.push(child);
+      bioSound(80 + climate.humidity, 0.25);
+    }
+
+    // spore / synapse pulse
+    if (Math.random() < 0.0008 * humid) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(${this.hue + 40}, 80%, 70%, 0.15)`;
+      ctx.lineWidth = 0.4;
+      ctx.stroke();
     }
 
     if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) {
       this.energy = 0;
     }
   }
-
-  draw() {
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    ctx.lineTo(
-      this.x - Math.cos(this.angle) * this.size * 10,
-      this.y - Math.sin(this.angle) * this.size * 10
-    );
-    ctx.strokeStyle = `hsla(${this.hue}, 80%, 60%, 0.4)`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
 }
 
+/* ===== Hybrid Bio-System: Mycelium + Neural + Plant ===== */
 let organisms = [];
-for (let i = 0; i < 50; i++) {
+const nutrients = [];
+
+for (let i = 0; i < 80; i++) {
   organisms.push(new Organism(w / 2, h / 2));
 }
 
-/* ===== Endless Loop ===== */
+for (let i = 0; i < 120; i++) {
+  nutrients.push({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    energy: 50 + Math.random() * 100
+  });
+}
+
 function loop() {
-  ctx.fillStyle = 'rgba(5,5,9,0.08)';
+  ctx.fillStyle = 'rgba(5,5,9,0.18)';
   ctx.fillRect(0, 0, w, h);
 
+  // nutrient field (invisible attractor)
+  nutrients.forEach(n => {
+    n.energy -= 0.005;
+    if (n.energy < 0) {
+      n.x = Math.random() * w;
+      n.y = Math.random() * h;
+      n.energy = 80 + Math.random() * 120;
+    }
+  });
+
   organisms.forEach(o => {
+    // plant-like attraction to nutrients
+    let closest = null;
+    let dist = Infinity;
+    nutrients.forEach(n => {
+      const d = Math.hypot(o.x - n.x, o.y - n.y);
+      if (d < dist) {
+        dist = d;
+        closest = n;
+      }
+    });
+
+    if (closest && dist < 200) {
+      const targetAngle = Math.atan2(closest.y - o.y, closest.x - o.x);
+      o.angle += (targetAngle - o.angle) * 0.02;
+    }
+
     o.step();
-    o.draw();
   });
 
   organisms = organisms.filter(o => o.energy > 0);
 
-  if (organisms.length < 300) {
+  // neural burst regeneration
+  if (organisms.length < 400 && Math.random() < 0.3) {
     organisms.push(new Organism(Math.random() * w, Math.random() * h));
+    bioSound(60 + climate.temp * 2, 0.15);
   }
 
   requestAnimationFrame(loop);
 }
-
-/* ===== User Interaction ===== */
-document.body.addEventListener('click', () => {
-  if (audioCtx.state !== 'running') audioCtx.resume();
-});
 
 loop();
 </script>
