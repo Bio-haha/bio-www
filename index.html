@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bio World Wide Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #050509;
+      font-family: monospace;
+    }
+    canvas {
+      display: block;
+    }
+    #info {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="info">Bio World Wide Web · Indonesia Climate → Living Organism</div>
+
+<script>
+/* =====================================================
+   BIO WORLD WIDE WEB
+   Climate-driven endless biological generator
+   Designed for GitHub Pages (no backend)
+   ===================================================== */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let w, h;
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ===== Climate Data (Indonesia - Jakarta default) =====
+   Using Open-Meteo (no API key)
+*/
+let climate = {
+  temp: 30,
+  humidity: 70,
+  wind: 1.5
+};
+
+async function fetchClimate() {
+  try {
+    const res = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,relative_humidity_2m,wind_speed_10m'
+    );
+    const data = await res.json();
+    climate.temp = data.current.temperature_2m;
+    climate.humidity = data.current.relative_humidity_2m;
+    climate.wind = data.current.wind_speed_10m;
+  } catch (e) {
+    console.log('Climate fetch failed, using internal mutation');
+  }
+}
+
+fetchClimate();
+setInterval(fetchClimate, 10 * 60 * 1000); // every 10 minutes
+
+/* ===== Audio System ===== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioCtx();
+
+function bioSound(freq, dur, mod) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+
+  gain.gain.value = 0.0001;
+  gain.gain.exponentialRampToValueAtTime(0.03, audioCtx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + dur);
+}
+
+/* ===== Biological Agent ===== */
+class Organism {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.angle = Math.random() * Math.PI * 2;
+    this.energy = Math.random() * 100;
+    this.size = 1;
+    this.hue = Math.random() * 360;
+  }
+
+  step() {
+    const tempFactor = climate.temp * 0.03;
+    const humidFactor = climate.humidity * 0.01;
+
+    this.angle += (Math.random() - 0.5) * humidFactor;
+    this.x += Math.cos(this.angle) * tempFactor;
+    this.y += Math.sin(this.angle) * tempFactor;
+
+    this.energy -= 0.2;
+    this.size += 0.005;
+    this.hue += climate.wind * 0.3;
+
+    if (Math.random() < 0.002 * humidFactor) {
+      organisms.push(new Organism(this.x, this.y));
+      bioSound(100 + climate.temp * 4, 0.2, humidFactor);
+    }
+
+    if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) {
+      this.energy = 0;
+    }
+  }
+
+  draw() {
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(
+      this.x - Math.cos(this.angle) * this.size * 10,
+      this.y - Math.sin(this.angle) * this.size * 10
+    );
+    ctx.strokeStyle = `hsla(${this.hue}, 80%, 60%, 0.4)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+let organisms = [];
+for (let i = 0; i < 50; i++) {
+  organisms.push(new Organism(w / 2, h / 2));
+}
+
+/* ===== Endless Loop ===== */
+function loop() {
+  ctx.fillStyle = 'rgba(5,5,9,0.08)';
+  ctx.fillRect(0, 0, w, h);
+
+  organisms.forEach(o => {
+    o.step();
+    o.draw();
+  });
+
+  organisms = organisms.filter(o => o.energy > 0);
+
+  if (organisms.length < 300) {
+    organisms.push(new Organism(Math.random() * w, Math.random() * h));
+  }
+
+  requestAnimationFrame(loop);
+}
+
+/* ===== User Interaction ===== */
+document.body.addEventListener('click', () => {
+  if (audioCtx.state !== 'running') audioCtx.resume();
+});
+
+loop();
+</script>
+</body>
+</html>
