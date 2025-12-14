@@ -97,13 +97,41 @@ class Organism {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.angle = Math.random() * Math.PI * 2;
-    this.energy = 80 + Math.random() * 60;
-    this.radius = 0.5 + Math.random() * 1.5;
-    this.hue = 120 + Math.random() * 120; // fungal / bio-neural range
-    this.thickness = 0.3 + Math.random() * 0.8;
-    this.branchChance = 0.003;
+    this.vx = (Math.random() - 0.5) * 0.6;
+    this.vy = (Math.random() - 0.5) * 0.6;
+    this.energy = 120 + Math.random() * 120;
+    this.hue = 150 + Math.random() * 140;
   }
+
+  step(field) {
+    const ix = Math.floor(this.x / field.scale);
+    const iy = Math.floor(this.y / field.scale);
+    const a = field.v[ix]?.[iy];
+
+    if (a !== undefined) {
+      this.vx += Math.cos(a) * 0.06;
+      this.vy += Math.sin(a) * 0.06;
+    }
+
+    this.vx *= 0.985;
+    this.vy *= 0.985;
+
+    const px = this.x;
+    const py = this.y;
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(this.x, this.y);
+    ctx.strokeStyle = `hsla(${this.hue},70%,65%,0.22)`;
+    ctx.lineWidth = 0.35;
+    ctx.stroke();
+
+    this.energy -= 0.12;
+  }
+}
 
   step() {
     const temp = climate.temp * 0.02;
