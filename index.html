@@ -75,13 +75,16 @@ function buildField(){
 buildField();
 
 function updateField(t){
-  for(let x=0;x<cols;x++)for(let y=0;y<rows;y++){
-    const nx=x*0.15, ny=y*0.15;
-    const c=Math.sin(nx+t*0.0002)+Math.cos(ny-t*0.0003);
-    const n=Math.sin((nx*ny)*0.02+t*0.00015);
-    angle[x][y]=c+n*2;
-    dens[x][y]=Math.abs(n);
+  for(let x=0;x<cols;x++){
+    for(let y=0;y<rows;y++){
+      const nx=x*0.15, ny=y*0.15;
+      const c=Math.sin(nx+t*0.0002)+Math.cos(ny-t*0.0003);
+      const n=Math.sin((nx*ny)*0.02+t*0.00015);
+      angle[x][y]=c+n*2;
+      dens[x][y]=Math.abs(n);
+    }
   }
+}
 }
 
 /* ===== Network Node (Voronoi-like) ===== */
