@@ -112,7 +112,7 @@ class Fiber {
   step() {
     const ix = Math.floor(this.x / field.scale);
     const iy = Math.floor(this.y / field.scale);
-    const a = field.v[ix]?.[iy];
+    const a = (field.v[ix] && field.v[ix][iy]);
     if (a !== undefined) {
       this.vx += Math.cos(a) * 0.08;
       this.vy += Math.sin(a) * 0.08;
