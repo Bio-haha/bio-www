@@ -1,44 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Bio World Wide Web</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #050509;
-      font-family: monospace;
-    }
-    canvas {
-      display: block;
-    }
-    #info {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.4);
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Bio World Wide Web — Installation Mode</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #020204;
+}
+canvas {
+  display: block;
+}
+</style>
 </head>
 <body>
-  <canvas id="c"></canvas>
-  <div id="info">Bio World Wide Web · Indonesia Climate → Living Organism</div>
+<canvas id="c"></canvas>
 
 <script>
 /* =====================================================
-   BIO WORLD WIDE WEB
-   Climate-driven endless biological generator
-   Designed for GitHub Pages (no backend)
+   BIO WORLD WIDE WEB — INSTALLATION MODE
+   Plant Microscopic · Fluorescent · Audio-Visual Organism
    ===================================================== */
 
+/* ===== Canvas ===== */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let w, h;
-
 function resize() {
   w = canvas.width = window.innerWidth;
   h = canvas.height = window.innerHeight;
@@ -46,203 +36,136 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-/* ===== Climate Data (Indonesia - Jakarta default) =====
-   Using Open-Meteo (no API key)
-*/
-let climate = {
-  temp: 30,
-  humidity: 70,
-  wind: 1.5
-};
-
+/* ===== Climate (Indonesia / fallback-safe) ===== */
+let climate = { temp: 30, humidity: 70, wind: 1.5 };
 async function fetchClimate() {
   try {
-    const res = await fetch(
-      'https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,relative_humidity_2m,wind_speed_10m'
-    );
-    const data = await res.json();
-    climate.temp = data.current.temperature_2m;
-    climate.humidity = data.current.relative_humidity_2m;
-    climate.wind = data.current.wind_speed_10m;
-  } catch (e) {
-    console.log('Climate fetch failed, using internal mutation');
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,relative_humidity_2m,wind_speed_10m');
+    const d = await r.json();
+    climate.temp = d.current.temperature_2m;
+    climate.humidity = d.current.relative_humidity_2m;
+    climate.wind = d.current.wind_speed_10m;
+  } catch(e) {}
+}
+fetchClimate();
+setInterval(fetchClimate, 10 * 60 * 1000);
+
+/* ===== Audio (Installation Grade) ===== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioCtx();
+const master = audioCtx.createGain();
+master.gain.value = 0.4;
+master.connect(audioCtx.destination);
+
+const osc = audioCtx.createOscillator();
+const noise = audioCtx.createBufferSource();
+const filter = audioCtx.createBiquadFilter();
+filter.type = 'lowpass';
+filter.frequency.value = 800;
+
+osc.type = 'sine';
+osc.frequency.value = 120;
+
+const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+const data = noiseBuffer.getChannelData(0);
+for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+noise.buffer = noiseBuffer;
+noise.loop = true;
+
+osc.connect(filter);
+noise.connect(filter);
+filter.connect(master);
+osc.start();
+noise.start();
+
+/* ===== Flow Field (Plant Microscopic) ===== */
+const scale = 30;
+let field = { scale, cols: 0, rows: 0, v: [] };
+
+function buildField() {
+  field.cols = Math.floor(w / scale);
+  field.rows = Math.floor(h / scale);
+  field.v = Array.from({ length: field.cols }, () => Array(field.rows).fill(0));
+}
+buildField();
+
+function updateField(t) {
+  for (let x = 0; x < field.cols; x++) {
+    for (let y = 0; y < field.rows; y++) {
+      const nx = x * 0.1;
+      const ny = y * 0.1;
+      field.v[x][y] = Math.sin(nx + t * 0.0002) + Math.cos(ny + t * 0.00015);
+    }
   }
 }
 
-fetchClimate();
-setInterval(fetchClimate, 10 * 60 * 1000); // every 10 minutes
-
-/* ===== Audio System ===== */
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioCtx();
-
-function bioSound(freq, dur, mod) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.type = 'sine';
-  osc.frequency.value = freq;
-
-  gain.gain.value = 0.0001;
-  gain.gain.exponentialRampToValueAtTime(0.03, audioCtx.currentTime + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + dur);
-}
-
-/* ===== Biological Agent ===== */
-class Organism {
+/* ===== Fibers ===== */
+class Fiber {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.6;
-    this.vy = (Math.random() - 0.5) * 0.6;
-    this.energy = 120 + Math.random() * 120;
-    this.hue = 150 + Math.random() * 140;
+    this.vx = 0;
+    this.vy = 0;
+    this.life = 400 + Math.random() * 400;
+    this.hue = Math.random() * 360;
   }
-
-  step(field) {
+  step() {
     const ix = Math.floor(this.x / field.scale);
     const iy = Math.floor(this.y / field.scale);
     const a = field.v[ix]?.[iy];
-
     if (a !== undefined) {
-      this.vx += Math.cos(a) * 0.06;
-      this.vy += Math.sin(a) * 0.06;
+      this.vx += Math.cos(a) * 0.08;
+      this.vy += Math.sin(a) * 0.08;
     }
-
-    this.vx *= 0.985;
-    this.vy *= 0.985;
-
+    this.vx *= 0.97;
+    this.vy *= 0.97;
     const px = this.x;
     const py = this.y;
-
     this.x += this.vx;
     this.y += this.vy;
-
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.lineTo(this.x, this.y);
-    ctx.strokeStyle = `hsla(${this.hue},70%,65%,0.22)`;
-    ctx.lineWidth = 0.35;
+    ctx.strokeStyle = `hsla(${this.hue},90%,65%,0.22)`;
+    ctx.lineWidth = 0.4;
     ctx.stroke();
-
-    this.energy -= 0.12;
+    this.life--;
   }
 }
 
-  step() {
-    const temp = climate.temp * 0.02;
-    const humid = climate.humidity * 0.015;
+let fibers = [];
+for (let i = 0; i < 1200; i++) fibers.push(new Fiber(Math.random()*w, Math.random()*h));
 
-    // mycelium-like wandering
-    this.angle += (Math.random() - 0.5) * humid;
-    const dx = Math.cos(this.angle) * temp * 2;
-    const dy = Math.sin(this.angle) * temp * 2;
+/* ===== Loop ===== */
+function loop(t) {
+  ctx.fillStyle = 'rgba(2,2,4,0.08)';
+  ctx.fillRect(0,0,w,h);
 
-    // organic tissue tube
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    ctx.lineTo(this.x + dx, this.y + dy);
-    ctx.strokeStyle = `hsla(${this.hue}, 70%, 60%, 0.35)`;
-    ctx.lineWidth = this.thickness;
-    ctx.stroke();
+  updateField(t);
 
-    this.x += dx;
-    this.y += dy;
-
-    this.energy -= 0.3;
-    this.thickness *= 0.999;
-    this.hue += climate.wind * 0.2;
-
-    // fungal branching
-    if (Math.random() < this.branchChance * humid) {
-      const child = new Organism(this.x, this.y);
-      child.angle = this.angle + (Math.random() - 0.5) * Math.PI / 2;
-      child.thickness = this.thickness * 0.8;
-      organisms.push(child);
-      bioSound(80 + climate.humidity, 0.25);
-    }
-
-    // spore / synapse pulse
-    if (Math.random() < 0.0008 * humid) {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius * 6, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(${this.hue + 40}, 80%, 70%, 0.15)`;
-      ctx.lineWidth = 0.4;
-      ctx.stroke();
-    }
-
-    if (this.x < 0 || this.x > w || this.y < 0 || this.y > h) {
-      this.energy = 0;
-    }
-  }
-}
-
-/* ===== Hybrid Bio-System: Mycelium + Neural + Plant ===== */
-let organisms = [];
-const nutrients = [];
-
-for (let i = 0; i < 80; i++) {
-  organisms.push(new Organism(w / 2, h / 2));
-}
-
-for (let i = 0; i < 120; i++) {
-  nutrients.push({
-    x: Math.random() * w,
-    y: Math.random() * h,
-    energy: 50 + Math.random() * 100
-  });
-}
-
-function loop() {
-  ctx.fillStyle = 'rgba(5,5,9,0.18)';
-  ctx.fillRect(0, 0, w, h);
-
-  // nutrient field (invisible attractor)
-  nutrients.forEach(n => {
-    n.energy -= 0.005;
-    if (n.energy < 0) {
-      n.x = Math.random() * w;
-      n.y = Math.random() * h;
-      n.energy = 80 + Math.random() * 120;
-    }
+  let activity = 0;
+  fibers.forEach(f => {
+    f.step();
+    activity += Math.abs(f.vx) + Math.abs(f.vy);
   });
 
-  organisms.forEach(o => {
-    // plant-like attraction to nutrients
-    let closest = null;
-    let dist = Infinity;
-    nutrients.forEach(n => {
-      const d = Math.hypot(o.x - n.x, o.y - n.y);
-      if (d < dist) {
-        dist = d;
-        closest = n;
-      }
-    });
+  fibers = fibers.filter(f => f.life > 0);
+  while (fibers.length < 1500) fibers.push(new Fiber(Math.random()*w, Math.random()*h));
 
-    if (closest && dist < 200) {
-      const targetAngle = Math.atan2(closest.y - o.y, closest.x - o.x);
-      o.angle += (targetAngle - o.angle) * 0.02;
-    }
-
-    o.step();
-  });
-
-  organisms = organisms.filter(o => o.energy > 0);
-
-  // neural burst regeneration
-  if (organisms.length < 400 && Math.random() < 0.3) {
-    organisms.push(new Organism(Math.random() * w, Math.random() * h));
-    bioSound(60 + climate.temp * 2, 0.15);
-  }
+  /* Audio follows visual tension */
+  const density = Math.min(activity / 4000, 1);
+  osc.frequency.setTargetAtTime(80 + density * 300, audioCtx.currentTime, 0.1);
+  filter.frequency.setTargetAtTime(400 + density * 2000, audioCtx.currentTime, 0.1);
+  master.gain.setTargetAtTime(0.2 + density * 0.4, audioCtx.currentTime, 0.1);
 
   requestAnimationFrame(loop);
 }
 
-loop();
+/* ===== Start ===== */
+document.body.addEventListener('click', () => {
+  if (audioCtx.state !== 'running') audioCtx.resume();
+});
+loop(0);
 </script>
 </body>
 </html>
