@@ -22,149 +22,151 @@ canvas {
 <script>
 /* =====================================================
    BIO WORLD WIDE WEB — INSTALLATION MODE
-   Plant Microscopic · Fluorescent · Audio-Visual Organism
+   A+B CHAOS : Cell + Tissue + Neural Network
    ===================================================== */
 
 /* ===== Canvas ===== */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let w, h;
-function resize() {
-  w = canvas.width = window.innerWidth;
-  h = canvas.height = window.innerHeight;
+function resize(){ w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+addEventListener('resize', resize); resize();
+
+/* ===== Climate (Indonesia) ===== */
+let climate = { temp:30, humidity:70, wind:1 };
+fetch('https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,relative_humidity_2m,wind_speed_10m')
+.then(r=>r.json()).then(d=>{
+  climate.temp=d.current.temperature_2m;
+  climate.humidity=d.current.relative_humidity_2m;
+  climate.wind=d.current.wind_speed_10m;
+}).catch(()=>{});
+
+/* ===== Audio : Neural Chaos ===== */
+const A = new (AudioContext||webkitAudioContext)();
+const master = A.createGain(); master.gain.value=0.3; master.connect(A.destination);
+
+function noiseNode(){
+  const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=A.createBufferSource(); s.buffer=b; s.loop=true; return s;
 }
-window.addEventListener('resize', resize);
-resize();
 
-/* ===== Climate (Indonesia / fallback-safe) ===== */
-let climate = { temp: 30, humidity: 70, wind: 1.5 };
-async function fetchClimate() {
-  try {
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-6.2&longitude=106.8&current=temperature_2m,relative_humidity_2m,wind_speed_10m');
-    const d = await r.json();
-    climate.temp = d.current.temperature_2m;
-    climate.humidity = d.current.relative_humidity_2m;
-    climate.wind = d.current.wind_speed_10m;
-  } catch(e) {}
+const voices=[];
+for(let i=0;i<10;i++){
+  const o=A.createOscillator();
+  const n=noiseNode();
+  const f=A.createBiquadFilter(); f.type='bandpass';
+  const g=A.createGain(); g.gain.value=0;
+  o.type='sawtooth'; o.frequency.value=40+i*25;
+  o.connect(f); n.connect(f); f.connect(g).connect(master);
+  o.start(); n.start();
+  voices.push({o,f,g,phase:Math.random()*10});
 }
-fetchClimate();
-setInterval(fetchClimate, 10 * 60 * 1000);
 
-/* ===== Audio (Installation Grade) ===== */
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioCtx();
-const master = audioCtx.createGain();
-master.gain.value = 0.4;
-master.connect(audioCtx.destination);
-
-const osc = audioCtx.createOscillator();
-const noise = audioCtx.createBufferSource();
-const filter = audioCtx.createBiquadFilter();
-filter.type = 'lowpass';
-filter.frequency.value = 800;
-
-osc.type = 'sine';
-osc.frequency.value = 120;
-
-const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
-const data = noiseBuffer.getChannelData(0);
-for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-noise.buffer = noiseBuffer;
-noise.loop = true;
-
-osc.connect(filter);
-noise.connect(filter);
-filter.connect(master);
-osc.start();
-noise.start();
-
-/* ===== Flow Field (Plant Microscopic) ===== */
-const scale = 30;
-let field = { scale, cols: 0, rows: 0, v: [] };
-
-function buildField() {
-  field.cols = Math.floor(w / scale);
-  field.rows = Math.floor(h / scale);
-  field.v = Array.from({ length: field.cols }, () => Array(field.rows).fill(0));
+/* ===== Microscopic Field ===== */
+const scale=18;
+let cols,rows,angle=[],dens=[];
+function buildField(){
+  cols=Math.floor(w/scale); rows=Math.floor(h/scale);
+  angle=[...Array(cols)].map(()=>Array(rows).fill(0));
+  dens=[...Array(cols)].map(()=>Array(rows).fill(0));
 }
 buildField();
 
-function updateField(t) {
-  for (let x = 0; x < field.cols; x++) {
-    for (let y = 0; y < field.rows; y++) {
-      const nx = x * 0.1;
-      const ny = y * 0.1;
-      field.v[x][y] = Math.sin(nx + t * 0.0002) + Math.cos(ny + t * 0.00015);
-    }
+function updateField(t){
+  for(let x=0;x<cols;x++)for(let y=0;y<rows;y++){
+    const nx=x*0.15, ny=y*0.15;
+    const c=Math.sin(nx+t*0.0002)+Math.cos(ny-t*0.0003);
+    const n=Math.sin((nx*ny)*0.02+t*0.00015);
+    angle[x][y]=c+n*2;
+    dens[x][y]=Math.abs(n);
   }
 }
 
-/* ===== Fibers ===== */
-class Fiber {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.vx = 0;
-    this.vy = 0;
-    this.life = 400 + Math.random() * 400;
-    this.hue = Math.random() * 360;
+/* ===== Network Node (Voronoi-like) ===== */
+class Node{
+  constructor(){
+    this.x=Math.random()*w; this.y=Math.random()*h;
+    this.vx=0; this.vy=0;
+    this.h=Math.random()*360;
   }
-  step() {
-    const ix = Math.floor(this.x / field.scale);
-    const iy = Math.floor(this.y / field.scale);
-    const a = (field.v[ix] && field.v[ix][iy]);
-    if (a !== undefined) {
-      this.vx += Math.cos(a) * 0.08;
-      this.vy += Math.sin(a) * 0.08;
-    }
-    this.vx *= 0.97;
-    this.vy *= 0.97;
-    const px = this.x;
-    const py = this.y;
-    this.x += this.vx;
-    this.y += this.vy;
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(this.x, this.y);
-    ctx.strokeStyle = `hsla(${this.hue},90%,65%,0.22)`;
-    ctx.lineWidth = 0.4;
-    ctx.stroke();
-    this.life--;
+  move(){
+    const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
+    const a=(angle[ix]&&angle[ix][iy])||0;
+    const d=(dens[ix]&&dens[ix][iy])||0;
+    this.vx+=Math.cos(a)*(0.1+d*0.3);
+    this.vy+=Math.sin(a)*(0.1+d*0.3);
+    this.vx*=0.95; this.vy*=0.95;
+    this.x=(this.x+this.vx+w)%w;
+    this.y=(this.y+this.vy+h)%h;
   }
 }
 
-let fibers = [];
-for (let i = 0; i < 1200; i++) fibers.push(new Fiber(Math.random()*w, Math.random()*h));
+let nodes=[...Array(260)].map(()=>new Node());
+
+/* ===== Luminous Signal ===== */
+let signals=[];
+function emitSignal(a,b){
+  signals.push({
+    a,b,t:0,h:Math.random()*360
+  });
+}
+
+/* ===== replace cells ===== */
+let cells=[];(()=>new Cell());
 
 /* ===== Loop ===== */
-function loop(t) {
-  ctx.fillStyle = 'rgba(2,2,4,0.08)';
+function loop(t){
+  ctx.fillStyle='rgba(2,2,4,0.1)';
   ctx.fillRect(0,0,w,h);
 
   updateField(t);
+  nodes.forEach(n=>n.move());
 
-  let activity = 0;
-  fibers.forEach(f => {
-    f.step();
-    activity += Math.abs(f.vx) + Math.abs(f.vy);
+  // ===== Draw Network =====
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i], b=nodes[j];
+      const dx=a.x-b.x, dy=a.y-b.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<140){
+        ctx.strokeStyle=`hsla(${(a.h+b.h)/2},100%,70%,${0.08})`;
+        ctx.lineWidth=0.5;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        if(Math.random()<0.0004) emitSignal(a,b);
+      }
+    }
+  }
+
+  // ===== Flowing Light Signals =====
+  signals.forEach(s=>{
+    s.t+=0.02+Math.random()*0.02;
+    const x=s.a.x+(s.b.x-s.a.x)*s.t;
+    const y=s.a.y+(s.b.y-s.a.y)*s.t;
+    ctx.fillStyle=`hsla(${s.h},100%,80%,0.9)`;
+    ctx.beginPath(); ctx.arc(x,y,2.2,0,Math.PI*2); ctx.fill();
+  });
+  signals=signals.filter(s=>s.t<1);
+
+  // ===== Audio follows traffic =====
+  const traffic=signals.length/40;
+  voices.forEach((v,i)=>{
+    v.o.frequency.setTargetAtTime(60+i*30+traffic*400,A.currentTime,0.15);
+    v.f.frequency.setTargetAtTime(400+traffic*3000,A.currentTime,0.15);
+    v.g.gain.setTargetAtTime(traffic*(0.04+Math.random()*0.05),A.currentTime,0.2);
   });
 
-  fibers = fibers.filter(f => f.life > 0);
-  while (fibers.length < 1500) fibers.push(new Fiber(Math.random()*w, Math.random()*h));
-
-  /* Audio follows visual tension */
-  const density = Math.min(activity / 4000, 1);
-  osc.frequency.setTargetAtTime(80 + density * 300, audioCtx.currentTime, 0.1);
-  filter.frequency.setTargetAtTime(400 + density * 2000, audioCtx.currentTime, 0.1);
-  master.gain.setTargetAtTime(0.2 + density * 0.4, audioCtx.currentTime, 0.1);
+  // ===== Title =====
+  ctx.fillStyle='rgba(180,200,220,0.35)';
+  ctx.font='12px monospace';
+  ctx.fillText('BIO WORLD WIDE WEB — Simulated Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
 }
+}
 
-/* ===== Start ===== */
-document.body.addEventListener('click', () => {
-  if (audioCtx.state !== 'running') audioCtx.resume();
-});
+document.body.onclick=()=>A.resume();
 loop(0);
 </script>
 </body>
