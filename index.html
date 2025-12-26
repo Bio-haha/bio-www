@@ -236,9 +236,6 @@ spikes.forEach(s=>{
     const nx=Math.cos(a+age*80+f.drift)*0.6;
     const ny=Math.sin(a+age*80+f.drift)*0.6; 
 
-    const ix=(s.head.x/scale)|0, iy=(s.head.y/scale)|0;
-    const fa=(angle[ix]&&angle[ix][iy])||0;
-
 s.head.vx += Math.cos(fa)*0.6;
 s.head.vy += Math.sin(fa)*0.6;
 
@@ -359,6 +356,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
