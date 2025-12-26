@@ -82,6 +82,7 @@ function updateField(t){
 /* ===== NODES ===== */
 class Node{
   constructor(){
+    this.trail = Array.from({length:16},()=>({x:this.x,y:this.y}));
     this.x=Math.random()*w;
     this.y=Math.random()*h;
     this.vx=0; this.vy=0;
@@ -97,7 +98,9 @@ class Node{
     this.vy+=Math.cos(this.x*0.01-age)*0.3;
     this.vx*=0.92; this.vy*=0.92;
     this.x=(this.x+this.vx+w)%w;
-    this.y=(this.y+this.vy+h)%h;
+    this.y=(this.y+this.vy+h)%h; 
+    this.trail.pop();
+    this.trail.unshift({x:this.x,y:this.y});
   }
 } 
   function nearestNode(x,y){
@@ -116,7 +119,7 @@ function createSpike(){
   const n = nodes[Math.floor(Math.random()*nodes.length)];
   const s = {
     head:{ x:n.x, y:n.y, vx:0, vy:0 },
-    body:[],
+    fibers:[],
     target:null,
     life:600+Math.random()*1200
   };
@@ -185,6 +188,17 @@ function loop(t){
 
   updateField(t);
   nodes.forEach(n=>n.move());
+  nodes.forEach(n=>{
+  ctx.strokeStyle=`hsla(${n.h},90%,70%,0.12)`;
+  ctx.lineWidth=0.7;
+  ctx.beginPath();
+  n.trail.forEach((p,i)=>{
+    const wob=Math.sin(i*0.9+age*120)*1.4;
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.lineTo(p.x+wob,p.y-wob);
+  });
+  ctx.stroke();
+});
 
   // network
   for(let i=0;i<nodes.length;i++){
@@ -205,13 +219,18 @@ function loop(t){
   }
 //Tambahan Spike For Each
   spikes.forEach(s=>{
+  s.fibers.forEach(f=>{
+  ctx.strokeStyle='rgba(60,255,140,0.08)';
+  ctx.lineWidth=0.6;
   ctx.beginPath();
-  ctx.moveTo(s.head.x,s.head.y);
-  s.body.forEach(b=>ctx.lineTo(b.x,b.y));
-  ctx.strokeStyle='rgba(40,255,120,0.45)';
-  ctx.lineWidth=1;
+  f.pts.forEach((p,i)=>{
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    });
   ctx.stroke();
+  });
 });
+
 
   // colonies
   if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
@@ -225,12 +244,23 @@ spikes.forEach(s=>{
     s.target=null;
     s.life=400+Math.random()*1000;
   }
+  
+  if(s.target){
+  const dx=s.target.x-s.head.x;
+  const dy=s.target.y-s.head.y;
+  if(dx*dx+dy*dy<400){
+    s.target=null;
+  }
+}
 
   if(!s.target || Math.random()<0.004){
     s.target=nearestNode(s.head.x,s.head.y);
   }
 
   if(s.target){
+    const wob = Math.sin(age*120+s.life)*0.6;
+    s.head.vx += wob;
+    s.head.vy -= wob;
     const dx=s.target.x-s.head.x;
     const dy=s.target.y-s.head.y;
     s.head.vx+=dx*0.0018;
@@ -243,14 +273,24 @@ spikes.forEach(s=>{
   s.head.y+=s.head.vy;
 
   let px=s.head.x, py=s.head.y;
-  s.body.forEach(b=>{
-    const dx=px-b.x, dy=py-b.y;
-    const d=Math.hypot(dx,dy)||1;
-    const k=(d-9)/d;
-    b.x+=dx*k*0.7;
-    b.y+=dy*k*0.7;
-    px=b.x; py=b.y;
-  });
+  s.fibers.forEach(f=>{
+  const pts=f.pts;
+
+  // segmen pertama nempel ke head
+  pts[0].x += (s.head.x-pts[0].x)*0.45;
+  pts[0].y += (s.head.y-pts[0].y)*0.45;
+
+  // Loop Body (Ini Loop nya)
+  for(let i=1;i<pts.length;i++){
+    const p=pts[i], prev=pts[i-1];
+
+    const nx=Math.sin(age*80+i+f.drift)*0.8;
+    const ny=Math.cos(age*80+i+f.drift)*0.8;
+
+    // Update Body (Ini Updatenya)
+    p.x += (prev.x-p.x)*f.stick + nx;
+    p.y += (prev.y-p.y)*f.stick + ny;
+  }
 });
 
   // signals
@@ -295,4 +335,5 @@ loop(0);
 </script>
 </body>
 </html>
+
 
