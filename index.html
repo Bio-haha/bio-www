@@ -1,12 +1,3 @@
-Perbaiki code ini, 
-error console: 
-bio-www/:239 Uncaught ReferenceError: fa is not defined
-    at bio-www/:239:27
-    at Array.forEach (<anonymous>)
-    at bio-www/:223:12
-    at Array.forEach (<anonymous>)
-    at bio-www/:188:8 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,7 +118,7 @@ const spikes=[];
 function createSpike(){
   const n = nodes[Math.floor(Math.random()*nodes.length)];
   const s = {
-    head:{ x:n.x, y:n.y, vx:0, vy:0 },
+    head:{ x:n.x, y:n.y, vx:10, vy:0 },
     fibers:[],
     target:null,
     life:800+Math.random()*1600
@@ -375,4 +366,5 @@ loop(0);
 </script>
 </body>
 </html> 
+
 
