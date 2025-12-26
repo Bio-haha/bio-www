@@ -74,7 +74,9 @@ function updateField(t){
   for(let x=0;x<cols;x++){
     for(let y=0;y<rows;y++){
       const nx=x*0.16, ny=y*0.16;
-      const a=Math.sin(nx+t*0.00035)+Math.cos(ny-t*0.0003);
+      const jitter = Math.sin(t*0.002 + (x*y)%10) * 0.15;
+      const a = Math.sin(nx+t*0.00035+jitter)
+      + Math.cos(ny-t*0.0003-jitter);
       const n=Math.sin(nx*ny*0.025+t*0.00025);
       angle[x][y]=a+n*3;
       dens[x][y]=Math.abs(n);
@@ -111,7 +113,8 @@ function emit(a,b){
   signals.push({
     a,b,t:0,
     h:Math.random()*360,
-    v:0.01+Math.random()*0.04
+    v:0.005 + Math.random()*0.08,
+    life: 40 + Math.random()*80
   });
 }
 
@@ -160,7 +163,8 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
 
   // SIGNAL FLOW (LIGHT STREAM)
   signals.forEach(s=>{
-    s.t+=s.v;
+    s.t += s.v * (0.6 + Math.sin(s.life*0.1)*0.8);
+    s.life--;
     const x=s.a.x+(s.b.x-s.a.x)*s.t;
     const y=s.a.y+(s.b.y-s.a.y)*s.t;
     ctx.strokeStyle=`hsla(${s.h},100%,85%,0.85)`;
@@ -170,7 +174,7 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
     ctx.lineTo(x+Math.random()*3-1.5,y+Math.random()*3-1.5);
     ctx.stroke();
   });
-  signals=signals.filter(s=>s.t<1);
+  signals = signals.filter(s => s.t < 1 && s.life > 0);
 
   // AUDIO CHAOS
   const chaos=Math.min(signals.length/20,1.5);
@@ -183,10 +187,12 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
       200+chaos*6000,
       A.currentTime,0.12
     );
+    const burst = Math.random() < chaos*0.05 ? 1 : 0;
     v.g.gain.setTargetAtTime(
-      chaos*(0.04+Math.random()*0.08),
-      A.currentTime,0.15
-    );
+    chaos*(0.01 + burst*0.12),
+    A.currentTime,
+    burst ? 0.02 : 0.25
+);
   });
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
@@ -201,5 +207,6 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
