@@ -99,8 +99,19 @@ class Node{
     this.x=(this.x+this.vx+w)%w;
     this.y=(this.y+this.vy+h)%h;
   }
+} 
+  function nearestNode(x,y){
+  let m=1e9, t=null;
+  for(const n of nodes){
+    const dx=n.x-x, dy=n.y-y;
+    const d=dx*dx+dy*dy;
+    if(d<m){ m=d; t=n; }
+  }
+  return t;
 }
-let nodes=[...Array(520)].map(()=>new Node());
+
+let nodes=[...Array(520)].map(()=>new Node()); 
+for(let i=0;i<6;i++) createSpike(); 
 
 /* ===== COLONIES ===== */
 let colonies=[];
@@ -146,6 +157,21 @@ class Colony{
 
 /* ===== SIGNALS ===== */
 let signals=[];
+  /* ===== SPIKES (FUNGAL TENDRILS) ===== */
+const spikes=[];
+
+function createSpike(){
+  const n = nodes[Math.floor(Math.random()*nodes.length)];
+  const s = {
+    head:{ x:n.x, y:n.y, vx:0, vy:0 },
+    body:[],
+    target:null,
+    life:600+Math.random()*1200
+  };
+  for(let i=0;i<18;i++) s.body.push({x:s.head.x,y:s.head.y});
+  spikes.push(s);
+}
+
 function emit(a,b){
   signals.push({a,b,t:0,v:0.01+Math.random()*0.05,h:Math.random()*360});
 }
@@ -179,11 +205,55 @@ function loop(t){
       }
     }
   }
+//Tambahan Spike For Each
+  spikes.forEach(s=>{
+  ctx.beginPath();
+  ctx.moveTo(s.head.x,s.head.y);
+  s.body.forEach(b=>ctx.lineTo(b.x,b.y));
+  ctx.strokeStyle='rgba(40,255,120,0.45)';
+  ctx.lineWidth=1;
+  ctx.stroke();
+});
 
   // colonies
   if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
   colonies.forEach(c=>{c.grow();c.draw()});
-  colonies=colonies.filter(c=>!c.dead());
+  colonies=colonies.filter(c=>!c.dead()); 
+
+  // Spike Metabolism
+spikes.forEach(s=>{
+  s.life--;
+  if(s.life<0){
+    s.target=null;
+    s.life=400+Math.random()*1000;
+  }
+
+  if(!s.target || Math.random()<0.004){
+    s.target=nearestNode(s.head.x,s.head.y);
+  }
+
+  if(s.target){
+    const dx=s.target.x-s.head.x;
+    const dy=s.target.y-s.head.y;
+    s.head.vx+=dx*0.0018;
+    s.head.vy+=dy*0.0018;
+  }
+
+  s.head.vx*=0.91;
+  s.head.vy*=0.91;
+  s.head.x+=s.head.vx;
+  s.head.y+=s.head.vy;
+
+  let px=s.head.x, py=s.head.y;
+  s.body.forEach(b=>{
+    const dx=px-b.x, dy=py-b.y;
+    const d=Math.hypot(dx,dy)||1;
+    const k=(d-9)/d;
+    b.x+=dx*k*0.7;
+    b.y+=dy*k*0.7;
+    px=b.x; py=b.y;
+  });
+});
 
   // signals
   signals.forEach(s=>{
@@ -196,7 +266,7 @@ function loop(t){
     ctx.arc(x,y,2.5,0,Math.PI*2);
     ctx.stroke();
   });
-  signals=signals.filter(s=>s.t<1);
+  signals=signals.filter(s=>s.t<1); 
 
   // audio
   const chaos=Math.min(signals.length/20,1.5);
