@@ -322,21 +322,21 @@ v.g.gain.setTargetAtTime(
 }
     chaos*(0.01 + burst*0.12),
     A.currentTime,
-    burst ? 0.02 : 0.25
-//pindahan dari bawah });
+    burst ? 0.02 : 0.25  
+  });
+  
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
   ctx.fillText('BIO WORLD WIDE WEB — Bio-network Sonification',12,h-14);
 
   requestAnimationFrame(loop);
-    
-  });
 
 document.body.onclick=()=>A.resume();
 loop(0);
 </script>
 </body>
 </html>
+
 
 
 
