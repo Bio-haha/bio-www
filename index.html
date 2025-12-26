@@ -82,9 +82,9 @@ function updateField(t){
 /* ===== NODES ===== */
 class Node{
   constructor(){
-    this.trail = Array.from({length:16},()=>({x:this.x,y:this.y}));
     this.x=Math.random()*w;
     this.y=Math.random()*h;
+    this.trail = Array.from({length:16},()=>({x:this.x,y:this.y}));
     this.vx=0; this.vy=0;
     this.h=Math.random()*360;
   }
@@ -184,6 +184,73 @@ class Colony{
   }
   dead(){return this.mass<3||this.age>9000}
 }
+  // Spike Metabolism
+spikes.forEach(s=>{
+  s.life--;
+  if(s.life<0){
+    s.target=null;
+    s.life=400+Math.random()*1000;
+  }
+  
+  if(s.target){
+  const dx=s.target.x-s.head.x;
+  const dy=s.target.y-s.head.y;
+  if(dx*dx+dy*dy<400){
+    s.target=null;
+  }
+}
+
+  if(!s.target || Math.random()<0.004){
+    s.target=nearestNode(s.head.x,s.head.y);
+  }
+
+  if(s.target){
+    const wob = Math.sin(age*120+s.life)*0.6;
+    s.head.vx += wob;
+    s.head.vy -= wob;
+    const dx=s.target.x-s.head.x;
+    const dy=s.target.y-s.head.y;
+    s.head.vx+=dx*0.0018;
+    s.head.vy+=dy*0.0018;
+  }
+
+  s.head.vx*=0.91;
+  s.head.vy*=0.91;
+  s.head.x+=s.head.vx;
+  s.head.y+=s.head.vy;
+
+  let px=s.head.x, py=s.head.y;
+  s.fibers.forEach(f=>{
+  const pts=f.pts;
+
+  // head attract
+  pts[0].x += (s.head.x-pts[0].x)*0.4;
+  pts[0].y += (s.head.y-pts[0].y)*0.4;
+
+  for(let i=1;i<pts.length;i++){
+    const p=pts[i], prev=pts[i-1];
+
+    const ix=(p.x/scale)|0, iy=(p.y/scale)|0;
+    const a=(angle[ix]&&angle[ix][iy])||0;
+
+    const nx=Math.cos(a+age*80+f.drift)*0.6;
+    const ny=Math.sin(a+age*80+f.drift)*0.6; 
+
+    const ix=(s.head.x/scale)|0, iy=(s.head.y/scale)|0;
+    const fa=(angle[ix]&&angle[ix][iy])||0;
+
+s.head.vx += Math.cos(fa)*0.6;
+s.head.vy += Math.sin(fa)*0.6;
+
+
+    p.x += (prev.x-p.x)*f.stick + nx;
+    p.y += (prev.y-p.y)*f.stick + ny;
+  }
+  // segmen pertama nempel ke head
+  pts[0].x += (s.head.x-pts[0].x)*0.45;
+  pts[0].y += (s.head.y-pts[0].y)*0.45;
+  }
+});
 
 /* ===== SIGNALS ===== */
 let signals=[];
@@ -197,7 +264,7 @@ function loop(t){
   phase*=0.995;
   if(Math.random()<0.0005) phase=1;
 
-  ctx.fillStyle='rgba(2,2,4,0.05)';
+  ctx.fillStyle='rgba(2,2,4,0.02)';
   ctx.fillRect(0,0,w,h);
 
   updateField(t);
@@ -250,79 +317,6 @@ function loop(t){
   colonies.forEach(c=>{c.grow();c.draw()});
   colonies=colonies.filter(c=>!c.dead()); 
 
-  // Spike Metabolism
-spikes.forEach(s=>{
-  s.life--;
-  if(s.life<0){
-    s.target=null;
-    s.life=400+Math.random()*1000;
-  }
-  
-  if(s.target){
-  const dx=s.target.x-s.head.x;
-  const dy=s.target.y-s.head.y;
-  if(dx*dx+dy*dy<400){
-    s.target=null;
-  }
-}
-
-  if(!s.target || Math.random()<0.004){
-    s.target=nearestNode(s.head.x,s.head.y);
-  }
-
-  if(s.target){
-    const wob = Math.sin(age*120+s.life)*0.6;
-    s.head.vx += wob;
-    s.head.vy -= wob;
-    const dx=s.target.x-s.head.x;
-    const dy=s.target.y-s.head.y;
-    s.head.vx+=dx*0.0018;
-    s.head.vy+=dy*0.0018;
-  }
-
-  s.head.vx*=0.91;
-  s.head.vy*=0.91;
-  s.head.x+=s.head.vx;
-  s.head.y+=s.head.vy;
-
-  let px=s.head.x, py=s.head.y;
-  s.fibers.forEach(f=>{
-  const pts=f.pts;
-
-  // head attract
-  pts[0].x += (s.head.x-pts[0].x)*0.4;
-  pts[0].y += (s.head.y-pts[0].y)*0.4;
-
-  for(let i=1;i<pts.length;i++){
-    const p=pts[i], prev=pts[i-1];
-
-    const ix=(p.x/scale)|0, iy=(p.y/scale)|0;
-    const a=(angle[ix]&&angle[ix][iy])||0;
-
-    const nx=Math.cos(a+age*80+f.drift)*0.6;
-    const ny=Math.sin(a+age*80+f.drift)*0.6;
-
-    p.x += (prev.x-p.x)*f.stick + nx;
-    p.y += (prev.y-p.y)*f.stick + ny;
-  }
-  // segmen pertama nempel ke head
-  pts[0].x += (s.head.x-pts[0].x)*0.45;
-  pts[0].y += (s.head.y-pts[0].y)*0.45;
-
-  // Loop Body (Ini Loop nya)
-  for(let i=1;i<pts.length;i++){
-    const p=pts[i], prev=pts[i-1];
-
-    const nx=Math.sin(age*80+i+f.drift)*0.8;
-    const ny=Math.cos(age*80+i+f.drift)*0.8;
-
-    // Update Body (Ini Updatenya)
-    p.x += (prev.x-p.x)*f.stick + nx;
-    p.y += (prev.y-p.y)*f.stick + ny;
-  }
-  }
-});
-
   // signals
   signals.forEach(s=>{
     s.t+=s.v;
@@ -365,6 +359,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
