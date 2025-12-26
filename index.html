@@ -121,11 +121,25 @@ function createSpike(){
     head:{ x:n.x, y:n.y, vx:0, vy:0 },
     fibers:[],
     target:null,
-    life:600+Math.random()*1200
+    life:800+Math.random()*1600
   };
-  for(let i=0;i<18;i++) s.body.push({x:s.head.x,y:s.head.y});
+
+  const fiberCount = 30 + Math.random()*40;
+
+  for(let f=0;f<fiberCount;f++){
+    const pts=[];
+    for(let i=0;i<14;i++){
+      pts.push({x:s.head.x,y:s.head.y});
+    }
+    s.fibers.push({
+      pts,
+      stick:0.18+Math.random()*0.2,
+      drift:Math.random()*10
+    });
+  }
   spikes.push(s);
 }
+
 let nodes=[...Array(520)].map(()=>new Node()); 
 for(let i=0;i<6;i++) createSpike(); 
 
@@ -183,7 +197,7 @@ function loop(t){
   phase*=0.995;
   if(Math.random()<0.0005) phase=1;
 
-  ctx.fillStyle='rgba(2,2,4,0.25)';
+  ctx.fillStyle='rgba(2,2,4,0.05)';
   ctx.fillRect(0,0,w,h);
 
   updateField(t);
@@ -220,17 +234,16 @@ function loop(t){
 //Tambahan Spike For Each
   spikes.forEach(s=>{
   s.fibers.forEach(f=>{
-  ctx.strokeStyle='rgba(60,255,140,0.08)';
-  ctx.lineWidth=0.6;
-  ctx.beginPath();
-  f.pts.forEach((p,i)=>{
-      if(i===0) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    });
-  ctx.stroke();
+    ctx.beginPath();
+    for(let i=0;i<f.pts.length;i++){
+      const p=f.pts[i];
+      ctx.lineTo(p.x,p.y);
+    }
+    ctx.strokeStyle='rgba(120,255,200,0.05)';
+    ctx.lineWidth=0.6;
+    ctx.stroke();
   });
 });
-
 
   // colonies
   if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
@@ -275,6 +288,25 @@ spikes.forEach(s=>{
   let px=s.head.x, py=s.head.y;
   s.fibers.forEach(f=>{
   const pts=f.pts;
+
+  // head attract
+  pts[0].x += (s.head.x-pts[0].x)*0.4;
+  pts[0].y += (s.head.y-pts[0].y)*0.4;
+
+  for(let i=1;i<pts.length;i++){
+    const p=pts[i], prev=pts[i-1];
+
+    const ix=(p.x/scale)|0, iy=(p.y/scale)|0;
+    const a=(angle[ix]&&angle[ix][iy])||0;
+
+    const nx=Math.cos(a+age*80+f.drift)*0.6;
+    const ny=Math.sin(a+age*80+f.drift)*0.6;
+
+    p.x += (prev.x-p.x)*f.stick + nx;
+    p.y += (prev.y-p.y)*f.stick + ny;
+  }
+});
+
 
   // segmen pertama nempel ke head
   pts[0].x += (s.head.x-pts[0].x)*0.45;
@@ -335,5 +367,6 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
