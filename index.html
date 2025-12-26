@@ -109,7 +109,20 @@ class Node{
   }
   return t;
 }
+ /* ===== SPIKES (FUNGAL TENDRILS) ===== */
+const spikes=[];
 
+function createSpike(){
+  const n = nodes[Math.floor(Math.random()*nodes.length)];
+  const s = {
+    head:{ x:n.x, y:n.y, vx:0, vy:0 },
+    body:[],
+    target:null,
+    life:600+Math.random()*1200
+  };
+  for(let i=0;i<18;i++) s.body.push({x:s.head.x,y:s.head.y});
+  spikes.push(s);
+}
 let nodes=[...Array(520)].map(()=>new Node()); 
 for(let i=0;i<6;i++) createSpike(); 
 
@@ -157,21 +170,6 @@ class Colony{
 
 /* ===== SIGNALS ===== */
 let signals=[];
-  /* ===== SPIKES (FUNGAL TENDRILS) ===== */
-const spikes=[];
-
-function createSpike(){
-  const n = nodes[Math.floor(Math.random()*nodes.length)];
-  const s = {
-    head:{ x:n.x, y:n.y, vx:0, vy:0 },
-    body:[],
-    target:null,
-    life:600+Math.random()*1200
-  };
-  for(let i=0;i<18;i++) s.body.push({x:s.head.x,y:s.head.y});
-  spikes.push(s);
-}
-
 function emit(a,b){
   signals.push({a,b,t:0,v:0.01+Math.random()*0.05,h:Math.random()*360});
 }
@@ -297,3 +295,4 @@ loop(0);
 </script>
 </body>
 </html>
+
