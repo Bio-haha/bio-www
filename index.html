@@ -2,37 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Bio World Wide Web — Installation Mode</title>
+<title>Bio World Wide Web — Dense Chaos Mode</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: #020204;
+html,body{
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  background:#020204;
 }
-canvas { display:block; }
+canvas{display:block;}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 
 <script>
-/* =====================================================
-   BIO WORLD WIDE WEB — INSTALLATION MODE
-   A + B + CHAOS EXTENDED
-   ===================================================== */
+/* =========================================
+   BIO WORLD WIDE WEB
+   Dense + Chaotic + Fluorescent
+   ========================================= */
 
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
 let w,h;
-function resize(){ w=canvas.width=innerWidth; h=canvas.height=innerHeight; }
-addEventListener('resize',resize); resize();
+function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;}
+addEventListener('resize',resize);resize();
 
 /* ===== AUDIO ===== */
 const A=new (AudioContext||webkitAudioContext)();
 const master=A.createGain();
-master.gain.value=0.25;
+master.gain.value=0.3;
 master.connect(A.destination);
 
 function noiseNode(){
@@ -45,23 +45,23 @@ function noiseNode(){
 }
 
 const voices=[];
-for(let i=0;i<14;i++){
+for(let i=0;i<18;i++){
   const o=A.createOscillator();
   const n=noiseNode();
   const f=A.createBiquadFilter();
   const g=A.createGain();
   o.type='sawtooth';
-  o.frequency.value=30+i*18;
+  o.frequency.value=20+i*16;
   f.type='bandpass';
   g.gain.value=0;
   o.connect(f); n.connect(f);
   f.connect(g).connect(master);
   o.start(); n.start();
-  voices.push({o,f,g,seed:Math.random()});
+  voices.push({o,f,g,seed:Math.random()*10});
 }
 
 /* ===== FIELD ===== */
-const scale=16;
+const scale=14;
 let cols,rows,angle=[],dens=[];
 function buildField(){
   cols=(w/scale)|0; rows=(h/scale)|0;
@@ -73,16 +73,16 @@ buildField();
 function updateField(t){
   for(let x=0;x<cols;x++){
     for(let y=0;y<rows;y++){
-      const nx=x*0.14, ny=y*0.14;
-      const a=Math.sin(nx+t*0.0003)+Math.cos(ny-t*0.00025);
-      const n=Math.sin((nx*ny)*0.03+t*0.0002);
-      angle[x][y]=a+n*2.4;
+      const nx=x*0.16, ny=y*0.16;
+      const a=Math.sin(nx+t*0.00035)+Math.cos(ny-t*0.0003);
+      const n=Math.sin(nx*ny*0.025+t*0.00025);
+      angle[x][y]=a+n*3;
       dens[x][y]=Math.abs(n);
     }
   }
 }
 
-/* ===== NETWORK NODES ===== */
+/* ===== NODES ===== */
 class Node{
   constructor(){
     this.x=Math.random()*w;
@@ -94,29 +94,29 @@ class Node{
     const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
     const a=(angle[ix]&&angle[ix][iy])||0;
     const d=(dens[ix]&&dens[ix][iy])||0;
-    this.vx+=Math.cos(a)*(0.12+d*0.45);
-    this.vy+=Math.sin(a)*(0.12+d*0.45);
-    this.vx*=0.93; this.vy*=0.93;
+    this.vx+=Math.cos(a)*(0.15+d*0.6);
+    this.vy+=Math.sin(a)*(0.15+d*0.6);
+    this.vx*=0.91; this.vy*=0.91;
     this.x=(this.x+this.vx+w)%w;
     this.y=(this.y+this.vy+h)%h;
   }
 }
 
-let nodes=[...Array(420)].map(()=>new Node());
+let nodes=[...Array(560)].map(()=>new Node());
 
-/* ===== SIGNAL FLOW ===== */
+/* ===== SIGNALS ===== */
 let signals=[];
 function emit(a,b){
   signals.push({
     a,b,t:0,
     h:Math.random()*360,
-    v:0.015+Math.random()*0.03
+    v:0.01+Math.random()*0.04
   });
 }
 
 /* ===== LOOP ===== */
 function loop(t){
-  ctx.fillStyle='rgba(2,2,4,0.14)';
+  ctx.fillStyle='rgba(2,2,4,0.12)';
   ctx.fillRect(0,0,w,h);
 
   updateField(t);
@@ -128,51 +128,52 @@ function loop(t){
       const A1=nodes[i], B1=nodes[j];
       const dx=A1.x-B1.x, dy=A1.y-B1.y;
       const d=Math.hypot(dx,dy);
-      if(d<160){
-        ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,70%,0.06)`;
-        ctx.lineWidth=0.5;
+      if(d<180){
+        ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.07)`;
+        ctx.lineWidth=0.45;
         ctx.beginPath();
         ctx.moveTo(A1.x,A1.y);
         ctx.lineTo(B1.x,B1.y);
         ctx.stroke();
-        if(Math.random()<0.0009) emit(A1,B1);
+        if(Math.random()<0.002) emit(A1,B1);
       }
     }
   }
 
-  // SIGNAL FLOW
+  // SIGNAL FLOW (LIGHT STREAM)
   signals.forEach(s=>{
     s.t+=s.v;
     const x=s.a.x+(s.b.x-s.a.x)*s.t;
     const y=s.a.y+(s.b.y-s.a.y)*s.t;
-    ctx.strokeStyle=`hsla(${s.h},100%,80%,0.7)`;
-    ctx.lineWidth=1.2;
+    ctx.strokeStyle=`hsla(${s.h},100%,85%,0.85)`;
+    ctx.lineWidth=1.6;
     ctx.beginPath();
-    ctx.arc(x,y,2.8,0,Math.PI*2);
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+Math.random()*3-1.5,y+Math.random()*3-1.5);
     ctx.stroke();
   });
   signals=signals.filter(s=>s.t<1);
 
-  // AUDIO COUPLING
-  const chaos=Math.min(signals.length/30,1.2);
+  // AUDIO CHAOS
+  const chaos=Math.min(signals.length/20,1.5);
   voices.forEach((v,i)=>{
     v.o.frequency.setTargetAtTime(
-      40+i*22+chaos*600*Math.sin(t*0.001+v.seed),
-      A.currentTime,0.12
+      30+i*20+chaos*900*Math.sin(t*0.001+v.seed),
+      A.currentTime,0.1
     );
     v.f.frequency.setTargetAtTime(
-      300+chaos*4200,
-      A.currentTime,0.15
+      200+chaos*6000,
+      A.currentTime,0.12
     );
     v.g.gain.setTargetAtTime(
-      chaos*(0.03+Math.random()*0.06),
-      A.currentTime,0.18
+      chaos*(0.04+Math.random()*0.08),
+      A.currentTime,0.15
     );
   });
 
-  ctx.fillStyle='rgba(180,220,255,0.4)';
+  ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Microscopic Chaotic Network',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Dense Fluorescent Neural Field',12,h-14);
 
   requestAnimationFrame(loop);
 }
