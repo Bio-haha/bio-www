@@ -96,8 +96,12 @@ class Node{
     const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
     const a=(angle[ix]&&angle[ix][iy])||0;
     const d=(dens[ix]&&dens[ix][iy])||0;
-    this.vx+=Math.cos(a)*(0.15+d*0.6);
-    this.vy+=Math.sin(a)*(0.15+d*0.6);
+// field influence
+this.vx += Math.cos(a) * (0.08 + d * 0.2);
+this.vy += Math.sin(a) * (0.08 + d * 0.2);
+// autonomous twitch (VERY IMPORTANT)
+this.vx += Math.sin(this.y*0.01 + Math.random()*2) * 0.35;
+this.vy += Math.cos(this.x*0.01 + Math.random()*2) * 0.35;
     this.vx*=0.91; this.vy*=0.91;
     this.x=(this.x+this.vx+w)%w;
     this.y=(this.y+this.vy+h)%h;
@@ -120,9 +124,8 @@ function emit(a,b){
 
 /* ===== LOOP ===== */
 function loop(t){
-  ctx.fillStyle='rgba(2,2,4,0.06)';
+  ctx.fillStyle='rgba(2,2,4,0.35)';
   ctx.fillRect(0,0,w,h);
-
   function updateField(t){
   const drift = Math.sin(t*0.00005)*0.5;
   for(let x=0;x<cols;x++){
@@ -156,6 +159,11 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
         ctx.moveTo(A1.x,A1.y);
         ctx.lineTo(B1.x,B1.y);
         ctx.stroke();
+// mutual disturbance
+A1.vx += dx * 0.00005;
+A1.vy += dy * 0.00005;
+B1.vx -= dx * 0.00005;
+B1.vy -= dy * 0.00005;
         if(Math.random()<0.002) emit(A1,B1);
       }
     }
@@ -172,7 +180,16 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
     ctx.beginPath();
     ctx.moveTo(x,y);
     ctx.lineTo(x+Math.random()*3-1.5,y+Math.random()*3-1.5);
-    ctx.stroke();
+    ctx.beginPath();
+ctx.moveTo(
+  x + Math.random()*3,
+  y + Math.random()*3
+);
+ctx.lineTo(
+  x - Math.random()*3,
+  y - Math.random()*3
+);
+ctx.stroke();
   });
   signals = signals.filter(s => s.t < 1 && s.life > 0);
 
@@ -188,7 +205,12 @@ if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
       A.currentTime,0.12
     );
     const burst = Math.random() < chaos*0.05 ? 1 : 0;
-    v.g.gain.setTargetAtTime(
+    const spike = Math.random() < chaos*0.08;
+v.g.gain.setTargetAtTime(
+  spike ? 0.18 : chaos*0.015,
+  A.currentTime,
+  spike ? 0.01 : 0.4
+);
     chaos*(0.01 + burst*0.12),
     A.currentTime,
     burst ? 0.02 : 0.25
@@ -207,6 +229,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
