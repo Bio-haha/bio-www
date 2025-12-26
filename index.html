@@ -305,9 +305,6 @@ spikes.forEach(s=>{
     p.x += (prev.x-p.x)*f.stick + nx;
     p.y += (prev.y-p.y)*f.stick + ny;
   }
-});
-
-
   // segmen pertama nempel ke head
   pts[0].x += (s.head.x-pts[0].x)*0.45;
   pts[0].y += (s.head.y-pts[0].y)*0.45;
@@ -322,6 +319,7 @@ spikes.forEach(s=>{
     // Update Body (Ini Updatenya)
     p.x += (prev.x-p.x)*f.stick + nx;
     p.y += (prev.y-p.y)*f.stick + ny;
+  }
   }
 });
 
@@ -367,6 +365,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
