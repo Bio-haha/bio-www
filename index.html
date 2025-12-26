@@ -118,7 +118,7 @@ const spikes=[];
 function createSpike(){
   const n = nodes[Math.floor(Math.random()*nodes.length)];
   const s = {
-    head:{ x:n.x, y:n.y, vx:10, vy:0 },
+    head:{ x:n.x, y:n.y, vx:0, vy:0 },
     fibers:[],
     target:null,
     life:800+Math.random()*1600
@@ -366,5 +366,6 @@ loop(0);
 </script>
 </body>
 </html> 
+
 
 
