@@ -236,9 +236,8 @@ spikes.forEach(s=>{
     const nx=Math.cos(a+age*80+f.drift)*0.6;
     const ny=Math.sin(a+age*80+f.drift)*0.6; 
 
-s.head.vx += Math.cos(fa)*0.6;
-s.head.vy += Math.sin(fa)*0.6;
-
+    s.head.vx += Math.cos(fa)*0.6;
+    s.head.vy += Math.sin(fa)*0.6;
 
     p.x += (prev.x-p.x)*f.stick + nx;
     p.y += (prev.y-p.y)*f.stick + ny;
@@ -246,7 +245,7 @@ s.head.vy += Math.sin(fa)*0.6;
   // segmen pertama nempel ke head
   pts[0].x += (s.head.x-pts[0].x)*0.45;
   pts[0].y += (s.head.y-pts[0].y)*0.45;
-  }
+  })
 });
 
 /* ===== SIGNALS ===== */
@@ -356,6 +355,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
