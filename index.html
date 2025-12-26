@@ -300,26 +300,7 @@ spikes.forEach(s=>{
   ctx.strokeStyle=`hsla(${n.h},90%,70%,0.12)`;
   ctx.lineWidth=0.7;
   ctx.beginPath();
-
-trail.forEach((p, i) => {
-
-  if (i === 0) {
-    ctx.moveTo(p.x, p.y);
-  } else {
-
-    // 🔥 LINE BREAK BIOLOGIS
-    if (Math.random() < 0.08 && i > 3) {
-      ctx.stroke();              // putuskan garis
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);      // lanjut dari titik ini
-    } else {
-      ctx.lineTo(p.x, p.y);
-    }
-
-  }
-});
-
-ctx.stroke();
+  ctx.stroke();
 
 });
 
@@ -401,6 +382,7 @@ loop(0);
 </script>
 </body>
 </html>
+
 
 
 
