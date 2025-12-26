@@ -1,40 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Bio World Wide Web — Dense Chaos Mode</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>Bio World Wide Web — Living Chaos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:#020204;
-}
-canvas{display:block;}
+html,body{margin:0;padding:0;overflow:hidden;background:#020204}
+canvas{display:block}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 
 <script>
-/* =========================================
-   BIO WORLD WIDE WEB
-   Dense + Chaotic + Fluorescent
-   ========================================= */
-
-const canvas=document.getElementById('c');
-const ctx=canvas.getContext('2d');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 let w,h;
-let age = 0;
-let phase = 0;
-function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;}
+function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
 addEventListener('resize',resize);resize();
 
+/* ===== TIME ===== */
+let age=0, phase=0;
+
 /* ===== AUDIO ===== */
-const A=new (AudioContext||webkitAudioContext)();
+const A = new (AudioContext||webkitAudioContext)();
 const master=A.createGain();
-master.gain.value=0.3;
+master.gain.value=0.35;
 master.connect(A.destination);
 
 function noiseNode(){
@@ -47,13 +38,13 @@ function noiseNode(){
 }
 
 const voices=[];
-for(let i=0;i<18;i++){
+for(let i=0;i<16;i++){
   const o=A.createOscillator();
   const n=noiseNode();
   const f=A.createBiquadFilter();
   const g=A.createGain();
   o.type='sawtooth';
-  o.frequency.value=20+i*16;
+  o.frequency.value=30+i*18;
   f.type='bandpass';
   g.gain.value=0;
   o.connect(f); n.connect(f);
@@ -73,15 +64,14 @@ function buildField(){
 buildField();
 
 function updateField(t){
+  const drift=Math.sin(t*0.00003+age)*0.6;
   for(let x=0;x<cols;x++){
     for(let y=0;y<rows;y++){
-      const nx=x*0.16, ny=y*0.16;
-      const jitter = Math.sin(t*0.002 + (x*y)%10) * 0.15;
-      const mutation = Math.sin(age * 3 + x * 0.02) * 0.6;
-      const a =
-      Math.sin(nx + t*0.0003 + mutation) +
-      Math.cos(ny - t*0.00025 - mutation);
-      + Math.cos(ny-t*0.0003-jitter);
+      const nx=x*0.16+drift, ny=y*0.16-drift;
+      const mut=Math.sin(age*2+x*0.02)*0.6;
+      const a=
+        Math.sin(nx+t*0.00035+mut)+
+        Math.cos(ny-t*0.0003-mut);
       const n=Math.sin(nx*ny*0.025+t*0.00025);
       angle[x][y]=a+n*3;
       dens[x][y]=Math.abs(n);
@@ -96,251 +86,144 @@ class Node{
     this.y=Math.random()*h;
     this.vx=0; this.vy=0;
     this.h=Math.random()*360;
-    this.life = 2000 + Math.random()*3000;
   }
   move(){
     const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
     const a=(angle[ix]&&angle[ix][iy])||0;
     const d=(dens[ix]&&dens[ix][iy])||0;
-this.vx += Math.sin(this.y*0.02) * phase * 1.2;
-this.vy += Math.cos(this.x*0.02) * phase * 1.2;
-// field influence
-this.vx += Math.cos(a) * (0.08 + d * 0.2);
-this.vy += Math.sin(a) * (0.08 + d * 0.2);
-// autonomous twitch (VERY IMPORTANT)
-this.vx += Math.sin(this.y*0.01 + Math.random()*2) * 0.35;
-this.vy += Math.cos(this.x*0.01 + Math.random()*2) * 0.35;
-    this.vx*=0.91; this.vy*=0.91;
+    this.vx+=Math.cos(a)*(0.08+d*0.25);
+    this.vy+=Math.sin(a)*(0.08+d*0.25);
+    this.vx+=Math.sin(this.y*0.01+age)*0.3;
+    this.vy+=Math.cos(this.x*0.01-age)*0.3;
+    this.vx*=0.92; this.vy*=0.92;
     this.x=(this.x+this.vx+w)%w;
     this.y=(this.y+this.vy+h)%h;
-    this.life--;
-if (this.life < 0) {
-  this.x = Math.random()*w;
-  this.y = Math.random()*h;
-  this.vx = this.vy = 0;
-  this.h = Math.random()*360;
-  this.life = 2000 + Math.random()*3000;
-}
   }
 }
+let nodes=[...Array(520)].map(()=>new Node());
 
-let nodes=[...Array(560)].map(()=>new Node());
-
-/* ===== SIGNALS ===== */
-let signals=[];
-let basalPulse = 0;
-  // ===== FUNGAL COLONIES =====
-let colonies = [];
-class Colony {
-  constructor() {
-    this.x = Math.random()*w;
-    this.y = Math.random()*h;
-    this.mass = 10 + Math.random()*20;
-    this.energy = 1;
-    this.age = 0;
-    this.branches = [];
-    this.h = 90 + Math.random()*80; // fungal green–yellow
+/* ===== COLONIES ===== */
+let colonies=[];
+class Colony{
+  constructor(){
+    this.x=Math.random()*w;
+    this.y=Math.random()*h;
+    this.mass=10;
+    this.energy=1;
+    this.age=0;
+    this.branches=[];
+    this.h=80+Math.random()*100;
   }
-
-  grow() {
+  grow(){
     this.age++;
-
-    // climate metabolism
-    const humidity = climate?.humidity || 70;
-    const temp = climate?.temp || 30;
-
-    // growth vs decay
-    this.energy += (humidity/100)*0.02;
-    this.energy -= (temp-28)*0.005;
-
-    // branching
-    if (Math.random() < this.energy*0.02 && this.branches.length < 40) {
-      this.branches.push({
-        a: Math.random()*Math.PI*2,
-        l: 2
-      });
+    this.energy+=0.02-Math.sin(age*0.1)*0.015;
+    if(Math.random()<this.energy*0.02 && this.branches.length<50){
+      this.branches.push({a:Math.random()*Math.PI*2,l:2});
     }
-
-    // decay
-    if (this.energy < 0.2) {
-      this.mass *= 0.995;
-    }
-
-    this.mass += this.energy*0.05;
+    this.mass+=this.energy*0.04;
+    if(this.energy<0.2) this.mass*=0.995;
   }
-
-  draw() {
-    ctx.strokeStyle = `hsla(${this.h},90%,60%,0.25)`;
-    ctx.lineWidth = 0.6;
-
+  draw(){
+    ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`;
+    ctx.lineWidth=0.6;
     this.branches.forEach(b=>{
-      b.l += this.energy*0.3;
-      const ex = this.x + Math.cos(b.a)*b.l;
-      const ey = this.y + Math.sin(b.a)*b.l;
+      b.l+=this.energy*0.4;
+      const ex=this.x+Math.cos(b.a)*b.l;
+      const ey=this.y+Math.sin(b.a)*b.l;
       ctx.beginPath();
       ctx.moveTo(this.x,this.y);
       ctx.lineTo(ex,ey);
       ctx.stroke();
-
-      // influence nodes
       nodes.forEach(n=>{
-        const dx = n.x-ex, dy = n.y-ey;
-        const d = Math.hypot(dx,dy);
-        if(d<60){
-          n.vx += dx*0.0002;
-          n.vy += dy*0.0002;
-        }
+        const dx=n.x-ex, dy=n.y-ey;
+        const d=Math.hypot(dx,dy);
+        if(d<70){n.vx+=dx*0.0002;n.vy+=dy*0.0002}
       });
     });
   }
-
-  dead() {
-    return this.mass < 3 || this.age > 8000;
-  }
+  dead(){return this.mass<3||this.age>9000}
 }
 
+/* ===== SIGNALS ===== */
+let signals=[];
 function emit(a,b){
-  signals.push({
-    a,b,t:0,
-    h:Math.random()*360,
-    v:0.005 + Math.random()*0.08,
-    life: 40 + Math.random()*80
-  });
+  signals.push({a,b,t:0,v:0.01+Math.random()*0.05,h:Math.random()*360});
 }
 
 /* ===== LOOP ===== */
 function loop(t){
-  if (Math.random() < 0.0005) phase = 1;
-  phase *= 0.996;
-  age += 0.00002;
-  ctx.fillStyle='rgba(2,2,4,0.35)';
+  age+=0.00002;
+  phase*=0.995;
+  if(Math.random()<0.0005) phase=1;
+
+  ctx.fillStyle='rgba(2,2,4,0.25)';
   ctx.fillRect(0,0,w,h);
-  function updateField(t){
-  const drift = Math.sin(t*0.00005)*0.5;
-  for(let x=0;x<cols;x++){
-    for(let y=0;y<rows;y++){
-      const nx=x*0.16+drift, ny=y*0.16-drift;
-      const a=Math.sin(nx+t*0.00035)+Math.cos(ny-t*0.0003);
-      const n=Math.sin(nx*ny*0.025+t*0.00025);
-      angle[x][y]=a+n*3;
-      dens[x][y]=Math.abs(n);
-    }
-  }
-}
+
+  updateField(t);
   nodes.forEach(n=>n.move());
-  basalPulse += 0.01;
-if (Math.sin(basalPulse) > 0.85 && signals.length < 80) {
-  const a = nodes[(Math.random()*nodes.length)|0];
-  const b = nodes[(Math.random()*nodes.length)|0];
-  emit(a,b);
-}
-// colony birth (rare)
-if (Math.random() < 0.0003 && colonies.length < 6) {
-  colonies.push(new Colony());
-}
-colonies.forEach(c=>{
-  c.grow();
-  c.draw();
-});
-colonies = colonies.filter(c=>!c.dead());
-}
-  // NETWORK
+
+  // network
   for(let i=0;i<nodes.length;i++){
     for(let j=i+1;j<nodes.length;j++){
-      const A1=nodes[i], B1=nodes[j];
+      const A1=nodes[i],B1=nodes[j];
       const dx=A1.x-B1.x, dy=A1.y-B1.y;
       const d=Math.hypot(dx,dy);
-      if(d<180){
-        ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.07)`;
+      if(d<170){
+        ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
         ctx.lineWidth=0.45;
         ctx.beginPath();
         ctx.moveTo(A1.x,A1.y);
         ctx.lineTo(B1.x,B1.y);
         ctx.stroke();
-// mutual disturbance
-A1.vx += dx * 0.00005;
-A1.vy += dy * 0.00005;
-B1.vx -= dx * 0.00005;
-B1.vy -= dy * 0.00005;
-        if(Math.random()<0.002) emit(A1,B1);
+        if(Math.random()<0.001) emit(A1,B1);
       }
     }
   }
 
-  // SIGNAL FLOW (LIGHT STREAM)
+  // colonies
+  if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
+  colonies.forEach(c=>{c.grow();c.draw()});
+  colonies=colonies.filter(c=>!c.dead());
+
+  // signals
   signals.forEach(s=>{
-    s.t += s.v * (0.6 + Math.sin(s.life*0.1)*0.8);
-    s.life--;
+    s.t+=s.v;
     const x=s.a.x+(s.b.x-s.a.x)*s.t;
     const y=s.a.y+(s.b.y-s.a.y)*s.t;
-    ctx.strokeStyle=`hsla(${s.h},100%,85%,0.85)`;
-    ctx.lineWidth=1.6;
+    ctx.strokeStyle=`hsla(${s.h},100%,85%,0.8)`;
+    ctx.lineWidth=1.5;
     ctx.beginPath();
-    ctx.moveTo(x,y);
-    ctx.lineTo(x+Math.random()*3-1.5,y+Math.random()*3-1.5);
-    ctx.beginPath();
-ctx.moveTo(
-  x + Math.random()*3,
-  y + Math.random()*3
-);
-ctx.lineTo(
-  x - Math.random()*3,
-  y - Math.random()*3
-);
-ctx.stroke();
+    ctx.arc(x,y,2.5,0,Math.PI*2);
+    ctx.stroke();
   });
-  signals = signals.filter(s => s.t < 1 && s.life > 0);
+  signals=signals.filter(s=>s.t<1);
 
-  // AUDIO CHAOS
+  // audio
   const chaos=Math.min(signals.length/20,1.5);
-  const bioMass = colonies.reduce((s,c)=>s+c.mass,0);
-  voices.forEach(v=>{
-  v.f.frequency.setTargetAtTime(
-    200 + bioMass*4,
-    A.currentTime,0.4
-  );
-});
-
   voices.forEach((v,i)=>{
     v.o.frequency.setTargetAtTime(
-      30+i*20+chaos*900*Math.sin(t*0.001+v.seed),
-      A.currentTime,0.1
-    );
-    v.f.frequency.setTargetAtTime(
-      200+chaos*6000,
+      40+i*20+chaos*800*Math.sin(t*0.001+v.seed),
       A.currentTime,0.12
     );
-    const burst = Math.random() < chaos*0.05 ? 1 : 0;
-    const spike = Math.random() < chaos*0.08;
-v.g.gain.setTargetAtTime(
-  spike ? 0.18 : chaos*0.015,
-  A.currentTime,
-  spike ? 0.01 : 0.4
-);
-  if (phase > 0.3) {
-  v.g.gain.setTargetAtTime(0.2, A.currentTime, 0.05);
-}
-    chaos*(0.01 + burst*0.12),
-    A.currentTime,
-    burst ? 0.02 : 0.25  
+    v.f.frequency.setTargetAtTime(
+      300+chaos*5000,
+      A.currentTime,0.15
+    );
+    v.g.gain.setTargetAtTime(
+      chaos*0.03,
+      A.currentTime,0.2
+    );
   });
-  
+
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Bio-network Sonification',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
+}
 
 document.body.onclick=()=>A.resume();
 loop(0);
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
