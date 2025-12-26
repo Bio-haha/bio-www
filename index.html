@@ -13,7 +13,6 @@ canvas{display:block}
 <canvas id="c"></canvas>
 
 <script>
-/* ===== BASIC ===== */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let w,h;
@@ -24,9 +23,9 @@ addEventListener('resize',resize);resize();
 let age=0;
 
 /* ===== AUDIO ===== */
-const A = new (AudioContext||webkitAudioContext)();
+const A=new (AudioContext||webkitAudioContext)();
 const master=A.createGain();
-master.gain.value=0.35;
+master.gain.value=0.3;
 master.connect(A.destination);
 
 function noiseNode(){
@@ -39,7 +38,7 @@ function noiseNode(){
 }
 
 const voices=[];
-for(let i=0;i<16;i++){
+for(let i=0;i<12;i++){
   const o=A.createOscillator();
   const n=noiseNode();
   const f=A.createBiquadFilter();
@@ -68,8 +67,11 @@ function updateField(t){
   const drift=Math.sin(t*0.00003+age)*0.6;
   for(let x=0;x<cols;x++){
     for(let y=0;y<rows;y++){
-      const nx=x*0.16+drift, ny=y*0.16-drift;
-      const a=Math.sin(nx+t*0.00035)+Math.cos(ny-t*0.0003);
+      const nx=x*0.16+drift;
+      const ny=y*0.16-drift;
+      const a=
+        Math.sin(nx+t*0.00035)+
+        Math.cos(ny-t*0.0003);
       const n=Math.sin(nx*ny*0.025+t*0.00025);
       angle[x][y]=a+n*3;
       dens[x][y]=Math.abs(n);
@@ -82,6 +84,7 @@ class Node{
   constructor(){
     this.x=Math.random()*w;
     this.y=Math.random()*h;
+    this.trail=Array.from({length:14},()=>({x:this.x,y:this.y}));
     this.vx=0; this.vy=0;
     this.h=Math.random()*360;
   }
@@ -89,18 +92,39 @@ class Node{
     const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
     const a=(angle[ix]&&angle[ix][iy])||0;
     const d=(dens[ix]&&dens[ix][iy])||0;
-    this.vx+=Math.cos(a)*(0.1+d*0.3);
-    this.vy+=Math.sin(a)*(0.1+d*0.3);
-    this.vx*=0.9; this.vy*=0.9;
+    this.vx+=Math.cos(a)*(0.08+d*0.25);
+    this.vy+=Math.sin(a)*(0.08+d*0.25);
+    this.vx*=0.92; this.vy*=0.92;
     this.x=(this.x+this.vx+w)%w;
     this.y=(this.y+this.vy+h)%h;
+    this.trail.pop();
+    this.trail.unshift({x:this.x,y:this.y});
   }
 }
+const nodes=[...Array(420)].map(()=>new Node());
 
-const nodes=[...Array(520)].map(()=>new Node());
+/* ===== SPIKES ===== */
+const spikes=[];
+function createSpike(){
+  const n=nodes[Math.random()*nodes.length|0];
+  const s={
+    head:{x:n.x,y:n.y,vx:0,vy:0},
+    fibers:[],
+    target:null,
+    life:800+Math.random()*1200
+  };
+  const fc=24+Math.random()*24;
+  for(let f=0;f<fc;f++){
+    const pts=[];
+    for(let i=0;i<12;i++) pts.push({x:s.head.x,y:s.head.y});
+    s.fibers.push({pts,stick:0.2+Math.random()*0.15,drift:Math.random()*10});
+  }
+  spikes.push(s);
+}
+for(let i=0;i<5;i++) createSpike();
 
 function nearestNode(x,y){
-  let m=1e9, t=null;
+  let m=1e9,t=null;
   for(const n of nodes){
     const dx=n.x-x, dy=n.y-y;
     const d=dx*dx+dy*dy;
@@ -109,45 +133,39 @@ function nearestNode(x,y){
   return t;
 }
 
-/* ===== SPIKES ===== */
-const spikes=[];
-
-function createSpike(){
-  const n=nodes[Math.random()*nodes.length|0];
-  const s={
-    head:{x:n.x,y:n.y,vx:0,vy:0},
-    fibers:[],
-    target:null,
-    life:600+Math.random()*1200
-  };
-  for(let i=0;i<40;i++){
-    const pts=[];
-    for(let k=0;k<14;k++) pts.push({x:s.head.x,y:s.head.y});
-    s.fibers.push({pts,stick:0.15+Math.random()*0.2,drift:Math.random()*10});
-  }
-  spikes.push(s);
-}
-
-for(let i=0;i<6;i++) createSpike();
-
 /* ===== LOOP ===== */
 function loop(t){
   age+=0.00002;
-  ctx.fillStyle='rgba(2,2,4,0.05)';
+  ctx.fillStyle='rgba(2,2,4,0.04)';
   ctx.fillRect(0,0,w,h);
 
   updateField(t);
   nodes.forEach(n=>n.move());
 
-  /* --- SPIKE METABOLISM --- */
+  // nodes draw
+  nodes.forEach(n=>{
+    ctx.strokeStyle=`hsla(${n.h},90%,70%,0.12)`;
+    ctx.beginPath();
+    n.trail.forEach((p,i)=>{
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    });
+    ctx.stroke();
+  });
+
+  // spikes
   spikes.forEach(s=>{
     s.life--;
-    if(s.life<0||!s.target) s.target=nearestNode(s.head.x,s.head.y);
-
-    const dx=s.target.x-s.head.x;
-    const dy=s.target.y-s.head.y;
-    s.head.vx+=dx*0.0015+Math.sin(age*120)*0.4;
-    s.head.vy+=dy*0.0015+Math.cos(age*120)*0.4;
+    if(!s.target||s.life<0){
+      s.target=nearestNode(s.head.x,s.head.y);
+      s.life=600+Math.random()*1000;
+    }
+    if(s.target){
+      const dx=s.target.x-s.head.x;
+      const dy=s.target.y-s.head.y;
+      s.head.vx+=dx*0.002;
+      s.head.vy+=dy*0.002;
+    }
     s.head.vx*=0.9; s.head.vy*=0.9;
     s.head.x+=s.head.vx;
     s.head.y+=s.head.vy;
@@ -158,37 +176,31 @@ function loop(t){
       pts[0].y+=(s.head.y-pts[0].y)*0.4;
       for(let i=1;i<pts.length;i++){
         const p=pts[i],prev=pts[i-1];
-        p.x+=(prev.x-p.x)*f.stick+Math.sin(age*80+f.drift)*0.4;
-        p.y+=(prev.y-p.y)*f.stick+Math.cos(age*80+f.drift)*0.4;
+        const ix=(p.x/scale)|0, iy=(p.y/scale)|0;
+        const a=(angle[ix]&&angle[ix][iy])||0;
+        p.x+=(prev.x-p.x)*f.stick+Math.cos(a+f.drift)*0.6;
+        p.y+=(prev.y-p.y)*f.stick+Math.sin(a+f.drift)*0.6;
       }
-    });
-  });
-
-  /* --- DRAW SPIKES --- */
-  ctx.strokeStyle='rgba(120,255,200,0.06)';
-  ctx.lineWidth=0.6;
-  spikes.forEach(s=>{
-    s.fibers.forEach(f=>{
       ctx.beginPath();
-      f.pts.forEach(p=>ctx.lineTo(p.x,p.y));
+      pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      ctx.strokeStyle='rgba(120,255,200,0.05)';
       ctx.stroke();
     });
   });
 
-  /* --- AUDIO --- */
-  const chaos=Math.min(spikes.length/6,1);
+  // audio
+  const chaos=Math.min(spikes.length/5,1.2);
   voices.forEach((v,i)=>{
-    v.o.frequency.setTargetAtTime(40+i*20+chaos*600*Math.sin(t*0.001+v.seed),A.currentTime,0.15);
-    v.g.gain.setTargetAtTime(chaos*0.03,A.currentTime,0.2);
+    v.o.frequency.setTargetAtTime(
+      50+i*30+chaos*400*Math.sin(t*0.001+v.seed),
+      A.currentTime,0.1
+    );
+    v.f.frequency.setTargetAtTime(300+chaos*3000,A.currentTime,0.1);
+    v.g.gain.setTargetAtTime(chaos*0.04,A.currentTime,0.2);
   });
-
-  ctx.fillStyle='rgba(200,220,255,0.4)';
-  ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
 }
-
 document.body.onclick=()=>A.resume();
 loop(0);
 </script>
