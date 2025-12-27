@@ -27,23 +27,6 @@ addEventListener('resize',resize);resize();
   let audioStarted = false;
   let voices = []; 
 
-  const cloudDelay = A.createDelay(4);
-  cloudDelay.delayTime.value = 0.18;
-
-  const cloudFeedback = A.createGain();
-  cloudFeedback.gain.value = 0.72;
-
-  const cloudFilter = A.createBiquadFilter();
-  cloudFilter.type = 'lowpass';
-  cloudFilter.frequency.value = 4200;
-
-  master.disconnect();
-  master.connect(cloudDelay);
-  cloudDelay.connect(cloudFilter);
-  cloudFilter.connect(cloudFeedback);
-  cloudFeedback.connect(cloudDelay);
-  cloudFilter.connect(A.destination); 
-
   let lastTrig = 0;
 
   function marbles(t, chaos){
@@ -65,7 +48,7 @@ addEventListener('resize',resize);resize();
 }
 
   function initVoices(){
-  const voices=[];
+  voices.length = 0;
 
   function createResonator(freq){
   const exciter = noiseNode();
@@ -599,7 +582,7 @@ voices.forEach((v,i)=>{
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.1',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.2',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -613,13 +596,28 @@ voices.forEach((v,i)=>{
   master.gain.value = 0.35;
   master.connect(A.destination);
 
-  initVoices();
+  initVoices(); 
+
+     // === CLOUDS / BEADS SMEAR ===
+    const cloudDelay = A.createDelay();
+    cloudDelay.delayTime.value = 0.18;
+
+    const cloudFeedback = A.createGain();
+    cloudFeedback.gain.value = 0.72;
+
+    const cloudFilter = A.createBiquadFilter();
+    cloudFilter.type = 'lowpass';
+    cloudFilter.frequency.value = 4200;
+
+    // reroute master → clouds
+    master.disconnect();
+    master.connect(cloudDelay);
+    cloudDelay.connect(cloudFilter);
+    cloudFilter.connect(cloudFeedback);
+    cloudFeedback.connect(cloudDelay);
+    cloudFilter.connect(A.destination);
 
   // START SEMUA AUDIO NODE
-  voices.forEach(v=>{
-    v.o.start();
-    v.n.start();
-  });
 
   audioStarted = true;
   loop(0); // visual + audio mulai bersama
@@ -630,5 +628,6 @@ voices.forEach((v,i)=>{
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
