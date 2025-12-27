@@ -25,7 +25,34 @@ addEventListener('resize',resize);resize();
 /* ===== AUDIO ===== */
   let A, master;
   let audioStarted = false;
-  let voices = [];
+  let voices = []; 
+
+  const cloudDelay = A.createDelay(4);
+  cloudDelay.delayTime.value = 0.18;
+
+  const cloudFeedback = A.createGain();
+  cloudFeedback.gain.value = 0.72;
+
+  const cloudFilter = A.createBiquadFilter();
+  cloudFilter.type = 'lowpass';
+  cloudFilter.frequency.value = 4200;
+
+  master.disconnect();
+  master.connect(cloudDelay);
+  cloudDelay.connect(cloudFilter);
+  cloudFilter.connect(cloudFeedback);
+  cloudFeedback.connect(cloudDelay);
+  cloudFilter.connect(A.destination); 
+
+  let lastTrig = 0;
+
+  function marbles(t, chaos){
+    if(t - lastTrig > (600 - chaos*400)){
+      lastTrig = t;
+      return Math.random() < 0.6;
+  }
+    return false;
+}
 
   function noiseNode(){
   const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
@@ -38,25 +65,33 @@ addEventListener('resize',resize);resize();
 }
 
   function initVoices(){
-  voices = [];
+  const voices=[];
 
-  for(let i=0;i<16;i++){
-    const o = A.createOscillator();
-    const n = noiseNode();
-    const f = A.createBiquadFilter();
-    const g = A.createGain();
+  function createResonator(freq){
+  const exciter = noiseNode();
 
-    o.type = 'sawtooth';
-    o.frequency.value = 30 + i*18;
-    f.type = 'bandpass';
-    g.gain.value = 0;
+  const bp = A.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = freq;
+  bp.Q.value = 25;
 
-    o.connect(f);
-    n.connect(f);
-    f.connect(g).connect(master);
+  const vca = A.createGain();
+  vca.gain.value = 0;
 
-    voices.push({o,n,f,g,seed:Math.random()*10});
-  }
+  exciter.connect(bp);
+  bp.connect(vca);
+  vca.connect(master);
+
+  exciter.start();
+
+  return {bp,vca,seed:Math.random()*100};
+}
+
+// polyphonic resonator bank
+for(let i=0;i<10;i++){
+  voices.push(createResonator(110 + i*70));
+}
+
 }
 
 /* ===== FIELD ===== */
@@ -541,22 +576,26 @@ function loop(t){
 
   // Audio
   if(audioStarted){
-  const chaos=Math.min(signals.length/20,1.5);
+  const chaos = Math.min(signals.length / 15, 2);
 
-  voices.forEach((v,i)=>{
-    v.o.frequency.setTargetAtTime(
-      40+i*20+chaos*800*Math.sin(t*0.001+v.seed),
-      A.currentTime,0.12
+voices.forEach((v,i)=>{
+  const hit = marbles(t, chaos);
+
+  if(hit){
+    v.bp.frequency.setTargetAtTime(
+      120 + i*90 + chaos*600*Math.sin(age*40 + v.seed),
+      A.currentTime,
+      0.02
     );
-    v.f.frequency.setTargetAtTime(
-      300+chaos*5000,
-      A.currentTime,0.15
+
+    v.vca.gain.cancelScheduledValues(A.currentTime);
+    v.vca.gain.setValueAtTime(chaos*0.08, A.currentTime);
+    v.vca.gain.exponentialRampToValueAtTime(
+      0.0001,
+      A.currentTime + 0.6 + Math.random()*0.8
     );
-    v.g.gain.setTargetAtTime(
-      chaos*0.03,
-      A.currentTime,0.2
-    );
-  });
+  }
+});
 }
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
@@ -592,3 +631,4 @@ function loop(t){
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
