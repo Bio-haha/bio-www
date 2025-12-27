@@ -20,15 +20,15 @@ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
 addEventListener('resize',resize);resize();
 
 /* ===== TIME ===== */
-let age=0, phase=0;
+  let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-const A = new (AudioContext||webkitAudioContext)();
-const master=A.createGain();
-master.gain.value=0.35;
-master.connect(A.destination);
+  const A = new (AudioContext||webkitAudioContext)();
+  const master=A.createGain();
+  master.gain.value=0.35;
+  master.connect(A.destination);
 
-function noiseNode(){
+  function noiseNode(){
   const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
   const d=b.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
@@ -37,12 +37,12 @@ function noiseNode(){
   return s;
 }
 
-const voices=[];
-for(let i=0;i<16;i++){
-  const o=A.createOscillator();
-  const n=noiseNode();
-  const f=A.createBiquadFilter();
-  const g=A.createGain();
+  const voices=[];
+  for(let i=0;i<16;i++){
+    const o=A.createOscillator();
+    const n=noiseNode();
+    const f=A.createBiquadFilter();
+    const g=A.createGain();
   o.type='sawtooth';
   o.frequency.value=30+i*18;
   f.type='bandpass';
@@ -54,19 +54,19 @@ for(let i=0;i<16;i++){
 }
 
 /* ===== FIELD ===== */
-const scale=14;
-let cols,rows,angle=[],dens=[];
-function buildField(){
+  const scale=14;
+  let cols,rows,angle=[],dens=[];
+  function buildField(){
   cols=(w/scale)|0; rows=(h/scale)|0;
   angle=[...Array(cols)].map(()=>Array(rows).fill(0));
   dens=[...Array(cols)].map(()=>Array(rows).fill(0));
 }
-buildField();
+  buildField();
 
-function updateField(t){
-  const drift=Math.sin(t*0.00003+age)*0.6;
+  function updateField(t){
+      const drift=Math.sin(t*0.00003+age)*0.6;
   for(let x=0;x<cols;x++){
-    for(let y=0;y<rows;y++){
+  for(let y=0;y<rows;y++){
       const nx=x*0.16+drift, ny=y*0.16-drift;
       const mut=Math.sin(age*2+x*0.02)*0.6;
       const a=
@@ -80,7 +80,7 @@ function updateField(t){
 }
 
 /* ===== NODES ===== */
-class Node{
+  class Node{
   constructor(){
     this.x=Math.random()*w;
     this.y=Math.random()*h;
@@ -112,10 +112,11 @@ class Node{
   }
   return t;
 }
- /* ===== SPIKES (FUNGAL TENDRILS) ===== */
-const spikes=[];
+  
+/* ===== SPIKES (FUNGAL TENDRILS) ===== */
+  const spikes=[];
 
-function createSpike(){
+  function createSpike(){
   const n = nodes[Math.floor(Math.random()*nodes.length)];
   const s = {
     head:{ x:n.x, y:n.y, vx:0, vy:0 },
@@ -144,8 +145,8 @@ let nodes=[...Array(520)].map(()=>new Node());
 for(let i=0;i<6;i++) createSpike(); 
 
 /* ===== COLONIES ===== */
-let colonies=[];
-class Colony{
+  let colonies=[];
+  class Colony{
   constructor(){
     this.x=Math.random()*w;
     this.y=Math.random()*h;
@@ -186,8 +187,8 @@ class Colony{
 }
 
 /* ===== SIGNALS ===== */
-let signals=[];
-function emit(a,b){
+  let signals=[];
+  function emit(a,b){
   signals.push({a,b,t:0,v:0.01+Math.random()*0.05,h:Math.random()*360});
 }
 
@@ -203,8 +204,8 @@ function loop(t){
   updateField(t);
   nodes.forEach(n=>n.move());
 
-    // Spike Metabolism
-spikes.forEach(s=>{
+/* ===== SPIKE METABOLISM ===== */
+  spikes.forEach(s=>{
   s.life--;
   if(s.life<0){
     s.target=null;
@@ -228,11 +229,13 @@ spikes.forEach(s=>{
     s.head.vx += wob;
     s.head.vy -= wob;
     const dx=s.target.x-s.head.x;
-    const dy=s.target.y-s.head.y;
+    const dy=s.target.y-s.head.y; 
+    
+// Versi santun
     s.head.vx+=dx*0.0018;
     s.head.vy+=dy*0.0018; 
     
-//Versi lebih brutal namun lemot
+// Versi lebih brutal namun lemot
 /*  const bias = Math.sin(age*200 + s.life) * 0.001;
     const slip = Math.cos(age*140 + s.head.x*0.01) * 0.001;
 
@@ -250,11 +253,11 @@ spikes.forEach(s=>{
   s.fibers.forEach(f=>{
   const pts=f.pts;
 
-  // head attract
-  pts[0].x += (s.head.x-pts[0].x)*0.4;
-  pts[0].y += (s.head.y-pts[0].y)*0.4;
+// Head attract
+    pts[0].x += (s.head.x-pts[0].x)*0.4;
+    pts[0].y += (s.head.y-pts[0].y)*0.4;
 
-  for(let i=1;i<pts.length;i++){
+    for(let i=1;i<pts.length;i++){
     const p=pts[i], prev=pts[i-1];
 
     const ix = ((p.x + Math.sin(p.y*0.02)*12) / scale) | 0;
@@ -271,9 +274,10 @@ spikes.forEach(s=>{
     p.x += (prev.x-p.x)*f.stick + nx;
     p.y += (prev.y-p.y)*f.stick + ny;
   }
-  // segmen pertama nempel ke head
-  pts[0].x += (s.head.x-pts[0].x)*0.45;
-  pts[0].y += (s.head.y-pts[0].y)*0.45;
+    
+// Segmen pertama nempel ke head
+    pts[0].x += (s.head.x-pts[0].x)*0.45;
+    pts[0].y += (s.head.y-pts[0].y)*0.45;
   })
 });
   
@@ -296,7 +300,7 @@ spikes.forEach(s=>{
   ctx.stroke();
 });
 
-  // network
+/* ===== NETWORK ===== */
   for(let i=0;i<nodes.length;i++){
     for(let j=i+1;j<nodes.length;j++){
       const A1=nodes[i],B1=nodes[j];
@@ -306,34 +310,41 @@ spikes.forEach(s=>{
         ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
         ctx.lineWidth=0.45; 
         ctx.beginPath();
-        ctx.moveTo(A1.x,A1.y);
-        ctx.lineTo(B1.x,B1.y);
+        
+//Doksli
+        //ctx.moveTo(A1.x,A1.y);
+        //ctx.lineTo(B1.x,B1.y);
+
+//Modif Ngasal
+        ctx.moveTo(A1.x,B1.y);
+        ctx.lineTo(B1.x,A1.y);
         ctx.stroke();
 
 // Versi Brutal tapi Lemot
 /*
-  ctx.beginPath();
+    ctx.beginPath();
 
-  const steps = 6 + Math.random()*6;
-  for(let k=0;k<=steps;k++){
-  const t = k/steps;
+    const steps = 6 + Math.random()*6;
+    for(let k=0;k<=steps;k++){
+    const t = k/steps;
 
-  const ox = Math.sin(t*12 + age*80 + A1.h) * 6;
-  const oy = Math.cos(t*9  + age*60 + B1.h) * 6;
+    const ox = Math.sin(t*12 + age*80 + A1.h) * 6;
+    const oy = Math.cos(t*9  + age*60 + B1.h) * 6;
 
-  const x = A1.x + (B1.x - A1.x)*t + ox;
-  const y = A1.y + (B1.y - A1.y)*t + oy;
+    const x = A1.x + (B1.x - A1.x)*t + ox;
+    const y = A1.y + (B1.y - A1.y)*t + oy;
 
-  if(k===0) ctx.moveTo(x,y);
-  else ctx.lineTo(x,y);
+    if(k===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
 }
-ctx.stroke();
+    ctx.stroke();
 */
         if(Math.random()<0.001) emit(A1,B1);
       }
     }
   }
-//Tambahan Spike For Each
+  
+/* ===== TAMBAHAN SPIKE FOR EACH ===== */
   spikes.forEach(s=>{
   s.fibers.forEach(f=>{
     ctx.beginPath();
@@ -347,12 +358,12 @@ ctx.stroke();
   });
 });
 
-  // colonies
+ // Colonies
   if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
   colonies.forEach(c=>{c.grow();c.draw()});
   colonies=colonies.filter(c=>!c.dead()); 
 
-  // signals
+  // Signals
   signals.forEach(s=>{
     s.t+=s.v;
     const x=s.a.x+(s.b.x-s.a.x)*s.t;
@@ -365,7 +376,7 @@ ctx.stroke();
   });
   signals=signals.filter(s=>s.t<1); 
 
-  // audio
+  // Audio
   const chaos=Math.min(signals.length/20,1.5);
   voices.forEach((v,i)=>{
     v.o.frequency.setTargetAtTime(
@@ -395,8 +406,4 @@ loop(0);
 </body>
 </html> 
 
-
-
-
-
-
+// Bandung, Natal 25 Desember 2025
