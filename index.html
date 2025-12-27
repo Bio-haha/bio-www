@@ -231,16 +231,16 @@ function loop(t){
     const dx=s.target.x-s.head.x;
     const dy=s.target.y-s.head.y; 
     // Uji coba
-    const dz=s.target.x-s.head.y; 
+    //const dz=s.target.x-s.head.y; 
+
+// Versi santun
+    s.head.vx+=dx*0.0018;
+    s.head.vy+=dy*0.0018; 
     
 // Versi ngasal
-    s.head.vx+=dx*(0.0018+dy)*dz;
-    s.head.vy+=dy*0.0018;
-    
-// Versi santun
-    //s.head.vx+=dx*0.0018;
-    //s.head.vy+=dy*0.0018; 
-    
+    //s.head.vx+=dx*(0.0018+dy)*dz;
+    //s.head.vy+=dy*0.0018;
+        
 // Versi lebih brutal namun lemot
 /*  const bias = Math.sin(age*200 + s.life) * 0.001;
     const slip = Math.cos(age*140 + s.head.x*0.01) * 0.001;
@@ -318,13 +318,14 @@ function loop(t){
         ctx.beginPath();
         
 //Doksli
-        //ctx.moveTo(A1.x,A1.y);
-        //ctx.lineTo(B1.x,B1.y);
+        ctx.moveTo(A1.x,A1.y);
+        ctx.lineTo(B1.x,B1.y);
+        ctx.stroke();
 
 //Modif Ngasal
-        ctx.moveTo(A1.x,B1.y);
-        ctx.lineTo(B1.x,A1.y);
-        ctx.stroke();
+    //  ctx.moveTo(A1.x,B1.y);
+    //  ctx.lineTo(B1.x,A1.y);
+    //  ctx.stroke();
 
 // Versi Brutal tapi Lemot
 /*
@@ -413,4 +414,5 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025
+
 
