@@ -87,6 +87,15 @@ for(let i=0;i<10;i++){
   buildField();
 
   function updateField(t){
+    flowEnergy = 0;
+
+    for(let i=0;i<30;i++){
+      const x = (Math.random()*cols)|0;
+      const y = (Math.random()*rows)|0;
+    flowEnergy += Math.abs(angle[x][y]);
+}
+      flowEnergy = Math.min(flowEnergy / 30, 3);
+    
       const drift=Math.sin(t*0.00003+age)*0.6;
   for(let x=0;x<cols;x++){
   for(let y=0;y<rows;y++){
@@ -347,7 +356,18 @@ for(let i=0;i<6;i++) createSpike();
 }
 
 /* ===== LOOP ===== */
+  // Tambahan baru
+  let motionEnergy = 0;
+  let collisionEnergy = 0;
+  let flowEnergy = 0;
+
 function loop(t){
+  // Reset / Decay energy per frame
+  collisionEnergy *= 0.92+Math.sin(age*2)*0.02;
+  motionEnergy *= 0.94;
+  flowEnergy *= 0.96;
+
+  age += 0.0005;
   age+=0.00002;
   phase*=0.995;
   if(Math.random()<0.0005) phase=1;
@@ -357,6 +377,17 @@ function loop(t){
 
   updateField(t);
   nodes.forEach(n=>n.move());
+
+  // Tambahan baru 
+  motionEnergy = 0;
+
+nodes.forEach(n=>{
+  const v = Math.hypot(n.vx, n.vy);
+  motionEnergy += v;
+});
+
+motionEnergy = Math.min(motionEnergy / nodes.length, 4);
+
 
 /* ===== SPIKE METABOLISM ===== */
   spikes.forEach(s=>{
@@ -474,6 +505,7 @@ function loop(t){
       const dx=A1.x-B1.x, dy=A1.y-B1.y;
       const d=Math.hypot(dx,dy);
       if(d<170){
+        collisionEnergy += (170 - d) * 0.00003;
         ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
         ctx.lineWidth=0.45; 
         ctx.beginPath();
@@ -558,26 +590,59 @@ function loop(t){
 
   // Audio
   if(audioStarted){
-  const chaos = Math.min(signals.length / 15, 2);
 
-voices.forEach((v,i)=>{
-  const hit = marbles(t, chaos);
+  const chaos = Math.min(
+    signals.length * 0.06 +
+    motionEnergy * 0.8 +
+    collisionEnergy * 1.2,
+    3
+  );
 
-  if(hit){
-    v.bp.frequency.setTargetAtTime(
-      120 + i*90 + chaos*600*Math.sin(age*40 + v.seed),
-      A.currentTime,
-      0.02
-    );
+  // === RESONATOR RESPONSE ===
+  voices.forEach((v,i)=>{
+    const hit =
+      marbles(t, chaos) ||
+      Math.random() < motionEnergy * 0.02;
 
-    v.vca.gain.cancelScheduledValues(A.currentTime);
-    v.vca.gain.setValueAtTime(chaos*0.08, A.currentTime);
-    v.vca.gain.exponentialRampToValueAtTime(
-      0.0001,
-      A.currentTime + 0.6 + Math.random()*0.8
-    );
-  }
-});
+    if(hit){
+      v.bp.frequency.setTargetAtTime(
+        90 + i*80 +
+        motionEnergy*400 +
+        collisionEnergy*900,
+        A.currentTime,
+        0.03
+      );
+
+      v.vca.gain.cancelScheduledValues(A.currentTime);
+      v.vca.gain.setValueAtTime(
+        0.04 + motionEnergy*0.05,
+        A.currentTime
+      );
+      v.vca.gain.exponentialRampToValueAtTime(
+        0.0001,
+        A.currentTime + 0.4 + chaos*0.6
+      );
+    }
+  });
+
+  // === CLOUDS / BEADS FOLLOW FLOW ===
+  cloudDelay.delayTime.setTargetAtTime(
+    0.08 + flowEnergy*0.12 + Math.sin(age*10)*0.02,
+    A.currentTime,
+    0.2
+  );
+
+  cloudFeedback.gain.setTargetAtTime(
+    0.5 + chaos*0.18,
+    A.currentTime,
+    0.25
+  );
+
+  cloudFilter.frequency.setTargetAtTime(
+    1200 + chaos*3000 + motionEnergy*800,
+    A.currentTime,
+    0.3
+  );
 }
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
@@ -628,6 +693,7 @@ voices.forEach((v,i)=>{
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
