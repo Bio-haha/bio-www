@@ -26,6 +26,11 @@ addEventListener('resize',resize);resize();
   let A, master;
   let audioStarted = false;
   let voices = []; 
+  
+  let lastControl = 0;
+  let smoothChaos = 0;
+  let smoothFlow = 0;
+
   let cloudDelay, cloudFeedback, cloudFilter;
   let lastTrig = 0;
 
@@ -588,70 +593,33 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
   });
   signals=signals.filter(s=>s.t<1); 
 
-  // === AUDIO ===
-if(audioStarted && cloudDelay && cloudFeedback && cloudFilter){
+  // Audio
+if (audioStarted && A.currentTime - lastControl > 0.1) {
+  lastControl = A.currentTime;
 
-  const chaos = Math.min(
-    signals.length * 0.06 +
-    motionEnergy * 0.8 +
-    collisionEnergy * 1.2,
-    3
-  );
+  // smoothing biologis
+  smoothChaos += (chaos - smoothChaos) * 0.25;
+  smoothFlow  += (flowEnergy - smoothFlow) * 0.25;
 
-  // === RESONATOR RESPONSE ===
-  voices.forEach((v,i)=>{
-    const hit =
-      marbles(t, chaos) ||
-      Math.random() < motionEnergy * 0.02;
-
-    if(hit){
-      v.bp.frequency.setTargetAtTime(
-        90 + i*80 +
-        motionEnergy*400 +
-        collisionEnergy*900,
-        A.currentTime,
-        0.03
-      );
-
-      v.vca.gain.cancelScheduledValues(A.currentTime);
-      v.vca.gain.setValueAtTime(
-        0.04 + motionEnergy*0.05,
-        A.currentTime
-      );
-      v.vca.gain.exponentialRampToValueAtTime(
-        0.0001,
-        A.currentTime + 0.4 + chaos*0.6
-      );
-    }
-  });
-
-  // === CLOUDS / BEADS (SINGLE SOURCE OF TRUTH) ===
+  // === MUTABLE STYLE MODULATION ===
   cloudDelay.delayTime.setTargetAtTime(
-    0.08 +
-    flowEnergy * 0.12 +
-    collisionEnergy * 0.05 +
-    Math.sin(age * 10 + chaos) * 0.02,
+    0.12 + smoothFlow * 0.08,
     A.currentTime,
-    0.25
-  );
-
-  cloudFeedback.gain.setTargetAtTime(
-    0.5 + chaos * 0.18,
-    A.currentTime,
-    0.25
+    0.4
   );
 
   cloudFilter.frequency.setTargetAtTime(
-  1200 +
-  chaos * 3000 +
-  motionEnergy * 800 +
-  Math.sin(age * 6 + chaos) * 300,
-  A.currentTime,
-  0.3
-);
+    1400 + smoothChaos * 1800,
+    A.currentTime,
+    0.6
+  );
 
+  cloudFeedback.gain.setTargetAtTime(
+    0.45 + smoothChaos * 0.25,
+    A.currentTime,
+    0.6
+  );
 }
-
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
@@ -701,6 +669,7 @@ if(audioStarted && cloudDelay && cloudFeedback && cloudFilter){
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
