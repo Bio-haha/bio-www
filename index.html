@@ -23,34 +23,40 @@ addEventListener('resize',resize);resize();
   let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-  const A = new (AudioContext||webkitAudioContext)();
-  const master=A.createGain();
-  master.gain.value=0.35;
-  master.connect(A.destination);
+  let A, master;
+  let audioStarted = false;
+  let voices = [];
 
   function noiseNode(){
   const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
   const d=b.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   const s=A.createBufferSource();
-  s.buffer=b; s.loop=true;
+  s.buffer=b; 
+  s.loop=true;
   return s;
 }
 
-  const voices=[];
+  function initVoices(){
+  voices = [];
+
   for(let i=0;i<16;i++){
-    const o=A.createOscillator();
-    const n=noiseNode();
-    const f=A.createBiquadFilter();
-    const g=A.createGain();
-  o.type='sawtooth';
-  o.frequency.value=30+i*18;
-  f.type='bandpass';
-  g.gain.value=0;
-  o.connect(f); n.connect(f);
-  f.connect(g).connect(master);
-  o.start(); n.start();
-  voices.push({o,f,g,seed:Math.random()*10});
+    const o = A.createOscillator();
+    const n = noiseNode();
+    const f = A.createBiquadFilter();
+    const g = A.createGain();
+
+    o.type = 'sawtooth';
+    o.frequency.value = 30 + i*18;
+    f.type = 'bandpass';
+    g.gain.value = 0;
+
+    o.connect(f);
+    n.connect(f);
+    f.connect(g).connect(master);
+
+    voices.push({o,n,f,g,seed:Math.random()*10});
+  }
 }
 
 /* ===== FIELD ===== */
@@ -534,7 +540,9 @@ function loop(t){
   signals=signals.filter(s=>s.t<1); 
 
   // Audio
+  if(audioStarted){
   const chaos=Math.min(signals.length/20,1.5);
+
   voices.forEach((v,i)=>{
     v.o.frequency.setTargetAtTime(
       40+i*20+chaos*800*Math.sin(t*0.001+v.seed),
@@ -549,6 +557,7 @@ function loop(t){
       A.currentTime,0.2
     );
   });
+}
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
@@ -557,13 +566,33 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-document.body.onclick=()=>A.resume();
-loop(0);
+  document.body.addEventListener('click', ()=>{
+  if(audioStarted) return;
+
+  // === BUAT AUDIO CONTEXT SETELAH GESTURE ===
+  A = new (AudioContext||webkitAudioContext)();
+  master = A.createGain();
+  master.gain.value = 0.35;
+  master.connect(A.destination);
+
+  initVoices();
+
+  // START SEMUA AUDIO NODE
+  voices.forEach(v=>{
+    v.o.start();
+    v.n.start();
+  });
+
+  audioStarted = true;
+  loop(0); // visual + audio mulai bersama
+});
+
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
