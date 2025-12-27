@@ -171,6 +171,8 @@ for(let i=0;i<6;i++) createSpike();
     this.mass+=this.energy*0.04;
     if(this.energy<0.2) this.mass*=0.995;
   }
+    
+/* Doksli draw
   draw(){
     // Doksli warna
         //ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`; 
@@ -207,6 +209,69 @@ for(let i=0;i<6;i++) createSpike();
     this.x += Math.sin(age*10 + this.age)*0.2;
     this.y += Math.cos(age*12 - this.age)*0.2;
   }
+  */
+    
+// Draw uji coba
+  draw(){
+  ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
+  ctx.lineWidth = 0.6;
+
+  this.branches.forEach(b=>{
+    b.l += this.energy * 0.4;
+
+    let px = this.x;
+    let py = this.y;
+
+    const steps = Math.floor(b.l / 6);
+
+    for(let i=0;i<steps;i++){
+      const t = i / steps;
+
+      const bend = Math.sin(age*12 + i*0.6 + b.a) * 0.6;
+      const drift = (Math.random()-0.5) * 8;
+
+      const ang = b.a + bend;
+
+      const nx =
+        this.x +
+        Math.cos(ang) * b.l * t +
+        Math.sin(age*20 + i) * drift;
+
+      const ny =
+        this.y +
+        Math.sin(ang) * b.l * t +
+        Math.cos(age*18 + i) * drift;
+
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(nx, ny);
+      ctx.stroke();
+
+      px = nx;
+      py = ny;
+    }
+
+    // Interaksi tetap di ujung terluar
+    nodes.forEach(n=>{
+      const dx = n.x - px;
+      const dy = n.y - py;
+      const d = Math.hypot(dx,dy);
+      if(d < 60){
+        n.vx += dx * 0.00015;
+        n.vy += dy * 0.00015;
+      }
+    });
+  });
+
+  // Pusat tidak stabil
+  this.x += (Math.random()-0.5)*0.4;
+  this.y += (Math.random()-0.5)*0.4;
+
+  // Cabang tidak abadi
+  this.branches = this.branches.filter(b => b.l < 260);
+}
+  
+  // Akhir kata dari Colonies   
     dead(){return this.mass<3||this.age>9000}
 }
 
@@ -452,5 +517,6 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
