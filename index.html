@@ -28,6 +28,15 @@ addEventListener('resize',resize);resize();
   master.gain.value=0.35;
   master.connect(A.destination);
 
+  // Tambahan drone
+    const drone = A.createOscillator();
+    const dg = A.createGain();
+    drone.type = 'sine';
+    drone.frequency.value = 55;
+    dg.gain.value = 0.05;
+    drone.connect(dg).connect(master);
+    drone.start();
+
   // Doksli Noisenode
 /*
   function noiseNode(){
@@ -622,7 +631,7 @@ function loop(t){
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.2',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.3',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -634,3 +643,4 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
