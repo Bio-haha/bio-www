@@ -160,18 +160,39 @@ for(let i=0;i<6;i++) createSpike();
     this.age++;
     this.energy+=0.02-Math.sin(age*0.1)*0.015;
     if(Math.random()<this.energy*0.02 && this.branches.length<50){
-      this.branches.push({a:Math.random()*Math.PI*2,l:2});
+      
+    // Doksli branches 
+      //this.branches.push({a:Math.random()*Math.PI*2,l:2});
+      
+    // Branches uji coba 
+      this.branches.push({a: Math.random()*Math.PI*2,l:2,wob: Math.random()*10,bend: (Math.random()-0.5)*0.4});  
+      
     }
     this.mass+=this.energy*0.04;
     if(this.energy<0.2) this.mass*=0.995;
   }
   draw(){
-    ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`;
+    // Doksli warna
+        //ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`; 
+    // Warna uji coba
+          ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
+    
     ctx.lineWidth=0.6;
     this.branches.forEach(b=>{
       b.l+=this.energy*0.4;
-      const ex=this.x+Math.cos(b.a)*b.l;
-      const ey=this.y+Math.sin(b.a)*b.l;
+
+    // Doksli sin cos
+      //const ex=this.x+Math.cos(b.a)*b.l;
+      //const ey=this.y+Math.sin(b.a)*b.l; 
+      
+    // Sin Cos uji coba
+      const wob = Math.sin(age*40 + b.wob + b.l*0.1) * 12;
+      const bend = Math.cos(age*30 + b.wob) * b.bend;
+
+      const ex = this.x + Math.cos(b.a + bend) * b.l + wob;
+      const ey = this.y + Math.sin(b.a - bend) * b.l - wob;
+      // Batas akhir
+      
       ctx.beginPath();
       ctx.moveTo(this.x,this.y);
       ctx.lineTo(ex,ey);
@@ -183,7 +204,11 @@ for(let i=0;i<6;i++) createSpike();
       });
     });
   }
-  dead(){return this.mass<3||this.age>9000}
+    dead(){return this.mass<3||this.age>9000}
+
+ // Tidak terpusat   
+    this.x += Math.sin(age*10 + this.age)*0.2;
+    this.y += Math.cos(age*12 - this.age)*0.2;
 }
 
 /* ===== SIGNALS ===== */
@@ -428,3 +453,4 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
