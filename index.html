@@ -229,14 +229,16 @@ spikes.forEach(s=>{
     s.head.vy -= wob;
     const dx=s.target.x-s.head.x;
     const dy=s.target.y-s.head.y;
-    //s.head.vx+=dx*0.0018;
-    //s.head.vy+=dy*0.0018; ganti yang bawah kalau lemot
-    const bias = Math.sin(age*200 + s.life) * 0.001;
+    s.head.vx+=dx*0.0018;
+    s.head.vy+=dy*0.0018; 
+    
+//Versi lebih brutal namun lemot
+/*  const bias = Math.sin(age*200 + s.life) * 0.001;
     const slip = Math.cos(age*140 + s.head.x*0.01) * 0.001;
 
     s.head.vx += dx * (0.0015 + bias) - dy * slip;
     s.head.vy += dy * (0.0015 + bias) + dx * slip; 
-    //ganti kalau lemot
+*/
   }
 
   s.head.vx*=0.91;
@@ -386,6 +388,7 @@ loop(0);
 </script>
 </body>
 </html> 
+
 
 
 
