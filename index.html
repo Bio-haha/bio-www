@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Bio World Wide Web — Living Chaos</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png">
 <style>
 html,body{margin:0;padding:0;overflow:hidden;background:#020204}
 canvas{display:block}
@@ -26,9 +27,20 @@ addEventListener('resize',resize);resize();
   let A, master, voices=[], pulse, pg;
   let audioStarted = false; 
 
-  
+  function noiseNode(){
+  const buffer = A.createBuffer(1, A.sampleRate * 2, A.sampleRate);
+  const data = buffer.getChannelData(0);
 
+  for(let i=0;i<data.length;i++){
+    data[i] = Math.random()*2 - 1;
+  }
 
+  const src = A.createBufferSource();
+  src.buffer = buffer;
+  src.loop = true;
+
+  return src;
+}
 
 /* ===== FIELD ===== */
   const scale=14;
@@ -633,6 +645,7 @@ document.body.onclick = () => {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
