@@ -26,7 +26,7 @@ addEventListener('resize',resize);resize();
   let A, master;
   let audioStarted = false;
   let voices = []; 
-
+  let cloudDelay, cloudFeedback, cloudFilter;
   let lastTrig = 0;
 
   function marbles(t, chaos){
@@ -363,11 +363,11 @@ for(let i=0;i<6;i++) createSpike();
 
 function loop(t){
   // Reset / Decay energy per frame
-  collisionEnergy *= 0.92+Math.sin(age*2)*0.02;
+  collisionEnergy *= 0.94+Math.sin(age*2)*0.02;
   motionEnergy *= 0.94;
   flowEnergy *= 0.96;
 
-  age += 0.0005;
+  age += 0.0002;
   age+=0.00002;
   phase*=0.995;
   if(Math.random()<0.0005) phase=1;
@@ -588,8 +588,8 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
   });
   signals=signals.filter(s=>s.t<1); 
 
-  // Audio
-  if(audioStarted){
+  // === AUDIO ===
+if(audioStarted && cloudDelay && cloudFeedback && cloudFilter){
 
   const chaos = Math.min(
     signals.length * 0.06 +
@@ -625,29 +625,37 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
     }
   });
 
-  // === CLOUDS / BEADS FOLLOW FLOW ===
+  // === CLOUDS / BEADS (SINGLE SOURCE OF TRUTH) ===
   cloudDelay.delayTime.setTargetAtTime(
-    0.08 + flowEnergy*0.12 + Math.sin(age*10)*0.02,
+    0.08 +
+    flowEnergy * 0.12 +
+    collisionEnergy * 0.05 +
+    Math.sin(age * 10 + chaos) * 0.02,
     A.currentTime,
-    0.2
+    0.25
   );
 
   cloudFeedback.gain.setTargetAtTime(
-    0.5 + chaos*0.18,
+    0.5 + chaos * 0.18,
     A.currentTime,
     0.25
   );
 
   cloudFilter.frequency.setTargetAtTime(
-    1200 + chaos*3000 + motionEnergy*800,
-    A.currentTime,
-    0.3
-  );
+  1200 +
+  chaos * 3000 +
+  motionEnergy * 800 +
+  Math.sin(age * 6 + chaos) * 300,
+  A.currentTime,
+  0.3
+);
+
 }
+
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.3',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network X',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -664,13 +672,13 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
   initVoices(); 
 
      // === CLOUDS / BEADS SMEAR ===
-    const cloudDelay = A.createDelay();
+    cloudDelay = A.createDelay();
     cloudDelay.delayTime.value = 0.18;
 
-    const cloudFeedback = A.createGain();
+    cloudFeedback = A.createGain();
     cloudFeedback.gain.value = 0.72;
 
-    const cloudFilter = A.createBiquadFilter();
+    cloudFilter = A.createBiquadFilter();
     cloudFilter.type = 'lowpass';
     cloudFilter.frequency.value = 4200;
 
@@ -693,6 +701,7 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
