@@ -213,9 +213,10 @@ for(let i=0;i<6;i++) createSpike();
     
 // Draw uji coba
   draw(){
-  ctx.strokeStyle = `hsla(${this.h},90%,60%,0.18)`;
+  // Warna doksli
+  //ctx.strokeStyle = `hsla(${this.h},90%,60%,0.18)`;
   // Warna uji coba
-  //ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
+  ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
   ctx.lineWidth = 0.5;
 
   this.branches.forEach(b=>{
@@ -507,7 +508,7 @@ function loop(t){
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network X',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network Z',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -519,6 +520,7 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
