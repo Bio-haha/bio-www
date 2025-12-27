@@ -297,10 +297,24 @@ spikes.forEach(s=>{
       if(d<170){
         ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
         ctx.lineWidth=0.45;
-        ctx.beginPath();
-        ctx.moveTo(A1.x,A1.y);
-        ctx.lineTo(B1.x,B1.y);
-        ctx.stroke();
+
+  ctx.beginPath();
+
+  const steps = 6 + Math.random()*6;
+  for(let k=0;k<=steps;k++){
+  const t = k/steps;
+
+  const ox = Math.sin(t*12 + age*80 + A1.h) * 6;
+  const oy = Math.cos(t*9  + age*60 + B1.h) * 6;
+
+  const x = A1.x + (B1.x - A1.x)*t + ox;
+  const y = A1.y + (B1.y - A1.y)*t + oy;
+
+  if(k===0) ctx.moveTo(x,y);
+  else ctx.lineTo(x,y);
+}
+ctx.stroke();
+
         if(Math.random()<0.001) emit(A1,B1);
       }
     }
@@ -366,5 +380,6 @@ loop(0);
 </script>
 </body>
 </html> 
+
 
 
