@@ -28,15 +28,6 @@ addEventListener('resize',resize);resize();
   master.gain.value=0.35;
   master.connect(A.destination);
 
-  // Tambahan drone
-  const drone = A.createOscillator();
-  const dg = A.createGain();
-  drone.type = 'sine';
-  drone.frequency.value = 55;
-  dg.gain.value = 0.05;
-  drone.connect(dg).connect(master);
-  drone.start();
-
   // Doksli Noisenode
 /*
   function noiseNode(){
@@ -583,10 +574,10 @@ function loop(t){
 
   // Audio
   // Doksli: sin(age*4) lambat: 0.4
-    const chaos=Math.min(signals.length/25+Math.sin(age*0.4)*0.3+Math.cos(age*1.2)*0.2,1.2);
+  const chaos=Math.min(signals.length/25+Math.sin(age*0.4)*0.3+Math.cos(age*1.2)*0.2,1.2);
   // Doksli amplitude, yang atas uji coba
   //const chaos=Math.min(signals.length/20,1.5);
-
+  voices.forEach((v,i)=>{
     // Doksli Frequency
 /*
     v.f.frequency.setTargetAtTime(
@@ -603,7 +594,7 @@ function loop(t){
       A.currentTime,
       0.6
   );
-
+  
     // Tambahan beat
     const beat = Math.max(0,Math.sin(age*12));
     pg.gain.setTargetAtTime(
@@ -624,14 +615,14 @@ function loop(t){
 */
     // Gain uji coba
     v.g.gain.setTargetAtTime(
-      0.025 + chaos*0.04,
+      0.01 + chaos*0.025,
       A.currentTime,0.4
     );
-  }
+  });
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.3',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.2',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -643,5 +634,3 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
-
-
