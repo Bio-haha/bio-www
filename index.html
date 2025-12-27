@@ -594,14 +594,58 @@ motionEnergy = Math.min(motionEnergy / nodes.length, 4);
   signals=signals.filter(s=>s.t<1); 
 
   // Audio
+// Audio
 if (audioStarted && A.currentTime - lastControl > 0.1) {
   lastControl = A.currentTime;
 
+  // === CHAOS DARI VISUAL ===
+  const chaos = Math.min(
+    signals.length * 0.06 +
+    motionEnergy * 0.8 +
+    collisionEnergy * 1.2,
+    3
+  );
+
   // smoothing biologis
   smoothChaos += (chaos - smoothChaos) * 0.25;
-  smoothFlow  += (flowEnergy - smoothFlow) * 0.25;
+  smoothFlow  += (flowEnergy - smoothFlow) * 0.25; 
 
-  // === MUTABLE STYLE MODULATION ===
+    // === RINGS / PLUCKED RESONATORS ===
+  const scale = [0, 2, 3, 7, 10]; // pentatonic
+
+  voices.forEach((v, i) => {
+
+    const hit =
+      marbles(t, smoothChaos) &&
+      Math.random() < 0.3;
+
+    if (hit) {
+
+      const note =
+        110 *
+        Math.pow(
+          2,
+          scale[
+            (i + Math.floor(smoothChaos * 4)) % scale.length
+          ] / 12
+        );
+
+      v.bp.frequency.setTargetAtTime(
+        note,
+        A.currentTime,
+        0.02
+      );
+
+      v.vca.gain.cancelScheduledValues(A.currentTime);
+      v.vca.gain.setValueAtTime(0.06, A.currentTime);
+      v.vca.gain.exponentialRampToValueAtTime(
+        0.0001,
+        A.currentTime + 0.5 + smoothChaos * 0.4
+      );
+    }
+  });
+
+  // === CLOUDS / BEADS SMEAR ===
   cloudDelay.delayTime.setTargetAtTime(
     0.12 + smoothFlow * 0.08,
     A.currentTime,
@@ -623,7 +667,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network X',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network Z',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -669,6 +713,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
