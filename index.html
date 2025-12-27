@@ -24,18 +24,24 @@ addEventListener('resize',resize);resize();
   let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-  const A = new (AudioContext||webkitAudioContext)();
-  const master=A.createGain();
-  master.gain.value=0.35;
-  master.connect(A.destination);
+let audioStarted = false;
 
-  function noiseNode(){
+const A = new (AudioContext||webkitAudioContext)();
+const master=A.createGain();
+master.gain.value=0.35;
+master.connect(A.destination);
+
+// NOTE:
+// Jangan pernah memanggil .start() sebelum user gesture
+
+function noiseNode(){
   const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
   const d=b.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   const s=A.createBufferSource();
-  s.buffer=b; s.loop=true;
-  return s;
+  s.buffer=b;
+  s.loop=true;
+  return s; // start() dipanggil nanti
 }
 
   /* ===== AUDIO UTILS ===== */
@@ -618,7 +624,7 @@ function loop(t){
   // Audio
   
   /* ===== AUDIO MODULATION ===== */
-
+  if(audioStarted){
   const chaos=Math.min(signals.length/12,1.5);
 
   voices.forEach(v=>{
@@ -650,7 +656,7 @@ function loop(t){
     );
   }
 });
-
+  }
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
   ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network ZZ',12,h-14);
@@ -658,11 +664,23 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-document.body.onclick=()=>A.resume();
-loop(0);
+document.body.addEventListener('click', ()=>{
+  if(audioStarted) return;
+
+  A.resume();
+
+  tanpura.start();
+  tanpura2.start();
+  breath.start();
+
+  audioStarted = true;
+  loop(0);
+});
+  
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
