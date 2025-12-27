@@ -42,13 +42,15 @@ addEventListener('resize',resize);resize();
     return false;
 }
 
-  function noiseNode(){
-  const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-  const s=A.createBufferSource();
-  s.buffer=b; 
-  s.loop=true;
+  function excite() {
+  const b = A.createBuffer(1, A.sampleRate * 0.03, A.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) {
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / 400);
+  }
+
+  const s = A.createBufferSource();
+  s.buffer = b;
   return s;
 }
 
@@ -56,23 +58,18 @@ addEventListener('resize',resize);resize();
   voices.length = 0;
 
   function createResonator(freq){
-  const exciter = noiseNode();
-
   const bp = A.createBiquadFilter();
   bp.type = 'bandpass';
   bp.frequency.value = freq;
-  bp.Q.value = 25;
+  bp.Q.value = 35;
 
   const vca = A.createGain();
   vca.gain.value = 0;
 
-  exciter.connect(bp);
   bp.connect(vca);
   vca.connect(master);
 
-  exciter.start();
-
-  return {bp,vca,seed:Math.random()*100};
+  return { bp, vca };
 }
 
 // polyphonic resonator bank
@@ -617,7 +614,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 
     const hit =
       marbles(t, smoothChaos) &&
-      Math.random() < 0.3;
+      motionEnergy > 0.6;
 
     if (hit) {
 
@@ -635,6 +632,9 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
         A.currentTime,
         0.02
       );
+      const e = excite();
+      e.connect(v.bp);
+      e.start();
 
       v.vca.gain.cancelScheduledValues(A.currentTime);
       v.vca.gain.setValueAtTime(0.06, A.currentTime);
@@ -659,7 +659,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
   );
 
   cloudFeedback.gain.setTargetAtTime(
-    0.45 + smoothChaos * 0.25,
+    0.32 + smoothChaos * 0.2,
     A.currentTime,
     0.6
   );
@@ -667,7 +667,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network Z',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network H',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -713,6 +713,7 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
