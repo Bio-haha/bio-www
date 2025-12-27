@@ -23,83 +23,12 @@ addEventListener('resize',resize);resize();
   let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-  const A = new (AudioContext||webkitAudioContext)();
-  const master=A.createGain();
-  master.gain.value=0.35;
-  master.connect(A.destination);
+  let A, master, voices=[], pulse, pg;
+  let audioStarted = false; 
 
-  // Tambahan drone
-    const drone = A.createOscillator();
-    const dg = A.createGain();
-    drone.type = 'sine';
-    drone.frequency.value = 55;
-    dg.gain.value = 0.05;
-    drone.connect(dg).connect(master);
-    drone.start();
+  
 
-  // Doksli Noisenode
-/*
-  function noiseNode(){
-  const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-  const s=A.createBufferSource();
-  s.buffer=b; s.loop=true;
-  return s;
-}
-*/
 
-  // NoiseNode uji coba
-  function noiseNode(){
-  const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
-  const d=b.getChannelData(0);
-  let last=0;
-  for(let i=0;i<d.length;i++){
-    last = last*0.98 + (Math.random()*2-1)*0.02;
-    d[i]=last;
-  }
-  const s=A.createBufferSource();
-  s.buffer=b;
-  s.loop=true;
-  return s;
-}
-  // Tambahan oscillator
-  const pulse = A.createOscillator();
-  const pg = A.createGain();
-  pulse.type='sine';
-  pulse.frequency.value=90;
-  pg.gain.value=0;
-  pulse.connect(pg).connect(master);
-  pulse.start();
-
-  const voices=[];
-  for(let i=0;i<16;i++){
-    const o=A.createOscillator();
-    const n=noiseNode();
-    const f=A.createBiquadFilter();
-    const g=A.createGain();
-    
-    // Doksli oscillator
-      //o.type='sawtooth';
-      //o.frequency.value=30+i*18;
-
-    // Oscillatore uji coba
-    o.type = 'triangle';
-    o.frequency.value = [55, 73, 82, 110, 146][i%5] * (i<8?1:0.5);
-    
-    // Doksli Filter
-      //f.type='bandpass';
-
-    // Filter uji coba
-    f.type='lowpass';
-    f.Q.value = 6 + Math.random()*4;
-
-  g.gain.value=0;
-  o.connect(f); n.connect(f);
-  f.connect(g).connect(master);
-  o.start(); n.start();
-  voices.push({o,f,g,seed:Math.random()*10});
-}
 
 /* ===== FIELD ===== */
   const scale=14;
@@ -624,7 +553,7 @@ function loop(t){
 */
     // Gain uji coba
     v.g.gain.setTargetAtTime(
-      0.01 + chaos*0.025,
+      0.03 + chaos*0.04,
       A.currentTime,0.4
     );
   });
@@ -636,12 +565,74 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-document.body.onclick=()=>A.resume();
-loop(0);
+document.body.onclick = () => {
+  if(audioStarted) return;
+  audioStarted = true;
+
+  A = new (AudioContext||webkitAudioContext)();
+  master = A.createGain();
+  master.gain.value = 0.4;
+  master.connect(A.destination);
+
+  // DRONE
+  const drone = A.createOscillator();
+  const dg = A.createGain();
+  drone.type = 'sine';
+  drone.frequency.value = 55;
+  dg.gain.value = 0.08;
+  drone.connect(dg).connect(master);
+  drone.start();
+
+  // PULSE
+  pulse = A.createOscillator();
+  pg = A.createGain();
+  pulse.type = 'sine';
+  pulse.frequency.value = 90;
+  pg.gain.value = 0;
+  pulse.connect(pg).connect(master);
+  pulse.start();
+
+  // VOICES
+  for(let i=0;i<16;i++){
+    const o=A.createOscillator();
+    const n=noiseNode();
+    const f=A.createBiquadFilter();
+    const g=A.createGain();
+
+    o.type='triangle';
+    o.frequency.value=[55,73,82,110,146][i%5];
+
+    f.type='lowpass';
+    f.frequency.value=800;
+    f.Q.value=6;
+
+    g.gain.value=0.04; // Penting: Bukan 0
+
+    o.connect(f);
+    n.connect(f);
+    f.connect(g).connect(master);
+
+    o.start();
+    n.start();
+
+    voices.push({o,f,g,seed:Math.random()*10});
+  }
+
+  // Test Tone
+  const test=A.createOscillator();
+  const tg=A.createGain();
+  test.frequency.value=220;
+  tg.gain.value=0.05;
+  test.connect(tg).connect(master);
+  test.start();
+  setTimeout(()=>test.stop(),400);
+};
+
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
