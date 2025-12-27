@@ -32,15 +32,6 @@ addEventListener('resize',resize);resize();
   let smoothFlow = 0;
 
   let cloudDelay, cloudFeedback, cloudFilter;
-  let lastTrig = 0;
-
-  function marbles(t, chaos){
-    if(t - lastTrig > (600 - chaos*400)){
-      lastTrig = t;
-      return Math.random() < 0.6;
-  }
-    return false;
-}
 
   function excite() {
   const b = A.createBuffer(1, A.sampleRate * 0.03, A.sampleRate);
@@ -52,6 +43,21 @@ addEventListener('resize',resize);resize();
   const s = A.createBufferSource();
   s.buffer = b;
   return s;
+}
+
+  let lastTrigTime = 0;
+
+  function marblesAudio(chaos){
+  const now = A.currentTime;
+
+  // interval biologis (detik)
+  const interval = 0.6 - chaos * 0.3; // chaos ↑ → lebih rapat
+
+  if (now - lastTrigTime > interval) {
+    lastTrigTime = now;
+    return Math.random() < 0.6;
+  }
+  return false;
 }
 
   function initVoices(){
@@ -611,38 +617,29 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
   const scale = [0, 2, 3, 7, 10]; // pentatonic
 
   voices.forEach((v, i) => {
+    if (Math.random() > 0.25) return;
 
     const hit =
-      marbles(t, smoothChaos) &&
+      marblesAudio(smoothChaos) &&
       motionEnergy > 0.6;
 
-    if (hit) {
+  if (hit) {
+  const note = 110*Math.pow(2,scale[(i+Math.floor(smoothChaos*4)) % scale.length] / 12);
 
-      const note =
-        110 *
-        Math.pow(
-          2,
-          scale[
-            (i + Math.floor(smoothChaos * 4)) % scale.length
-          ] / 12
-        );
+  v.bp.frequency.setTargetAtTime(note, A.currentTime, 0.02);
 
-      v.bp.frequency.setTargetAtTime(
-        note,
-        A.currentTime,
-        0.02
-      );
-      const e = excite();
-      e.connect(v.bp);
-      e.start();
+  const e = excite();
+  e.connect(v.bp);
+  e.start();
 
-      v.vca.gain.cancelScheduledValues(A.currentTime);
-      v.vca.gain.setValueAtTime(0.06, A.currentTime);
-      v.vca.gain.exponentialRampToValueAtTime(
-        0.0001,
-        A.currentTime + 0.5 + smoothChaos * 0.4
-      );
-    }
+  // Wajib: stop + disconnect
+  e.stop(A.currentTime + 0.05);
+  e.onended = () => e.disconnect();
+
+  v.vca.gain.cancelScheduledValues(A.currentTime);
+  v.vca.gain.setValueAtTime(0.06, A.currentTime);
+  v.vca.gain.exponentialRampToValueAtTime(0.0001,A.currentTime + 0.6 + smoothChaos * 0.4);
+}
   });
 
   // === CLOUDS / BEADS SMEAR ===
@@ -659,15 +656,15 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
   );
 
   cloudFeedback.gain.setTargetAtTime(
-    0.32 + smoothChaos * 0.2,
-    A.currentTime,
-    0.6
-  );
+  Math.min(0.45, 0.25 + smoothChaos * 0.15),
+  A.currentTime,
+  0.6
+);
 }
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network H',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network ZX',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -713,12 +710,3 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
-
-
-
-
-
-
-
-
-
