@@ -155,9 +155,22 @@ for(let i=0;i<6;i++) createSpike();
     this.age=0;
     this.branches=[];
     this.h=80+Math.random()*100;
+
+    // Tambahan uji coba
+    this.vx = 0;
+    this.vy = 0;
+    this.drift = Math.random()*1000;
+    this.life = 4000 + Math.random()*4000;
   }
+    
   grow(){
     this.age++;
+    
+    // Tambahan life
+    this.life--;
+    if(this.life < 0){this.energy *= 0.95;this.mass *= 0.98;
+}   // Akhir tambahan
+    
     this.energy+=0.02-Math.sin(age*0.1)*0.015;
     if(Math.random()<this.energy*0.02 && this.branches.length<50){
       
@@ -171,8 +184,30 @@ for(let i=0;i<6;i++) createSpike();
     this.mass+=this.energy*0.04;
     if(this.energy<0.2) this.mass*=0.995;
   }
-    
-/* Doksli draw
+
+  flow(){
+  const ix = (this.x / scale) | 0;
+  const iy = (this.y / scale) | 0;
+  const a = (angle[ix] && angle[ix][iy]) || 0;
+  const d = (dens[ix] && dens[ix][iy]) || 0;
+
+  // Arus utama
+  this.vx += Math.cos(a) * (0.03 + d*0.08);
+  this.vy += Math.sin(a) * (0.03 + d*0.08);
+
+  // Arus liar biologis
+  this.vx += Math.sin(age*20 + this.drift) * 0.02;
+  this.vy += Math.cos(age*18 + this.drift) * 0.02;
+
+  // Redaman air
+  this.vx *= 0.96;
+  this.vy *= 0.96;
+
+  this.x = (this.x + this.vx + w) % w;
+  this.y = (this.y + this.vy + h) % h;
+}
+
+/* Doksli draw ()
   draw(){
     // Doksli warna
         //ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`; 
@@ -274,8 +309,12 @@ for(let i=0;i<6;i++) createSpike();
   this.branches = this.branches.filter(b => b.l < 260);
 }
   
-  // Akhir kata dari Colonies   
-    dead(){return this.mass<3||this.age>9000}
+  // Akhir kata dari Colonies  
+  // Doksli dead
+    //dead(){return this.mass<3||this.age>9000}
+  // Dead uji coba
+    dead(){return this.mass < 2 || this.energy < 0.05;}
+
 }
 
 /* ===== SIGNALS ===== */
@@ -473,7 +512,12 @@ function loop(t){
 
  // Colonies
   if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
-  colonies.forEach(c=>{c.grow();c.draw()});
+  // Doksli
+  //colonies.forEach(c=>{c.grow();c.draw()});
+  
+  // Uji coba
+  colonies.forEach(c=>{c.flow();c.grow();c.draw();});
+
   colonies=colonies.filter(c=>!c.dead()); 
 
   // Signals
@@ -508,7 +552,7 @@ function loop(t){
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network Z',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network XX',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -520,6 +564,7 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
