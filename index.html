@@ -304,8 +304,14 @@ spikes.forEach(s=>{
       const d=Math.hypot(dx,dy);
       if(d<170){
         ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
-        ctx.lineWidth=0.45;
+        ctx.lineWidth=0.45; 
+        ctx.beginPath();
+        ctx.moveTo(A1.x,A1.y);
+        ctx.lineTo(B1.x,B1.y);
+        ctx.stroke();
 
+// Versi Brutal tapi Lemot
+/*
   ctx.beginPath();
 
   const steps = 6 + Math.random()*6;
@@ -322,7 +328,7 @@ spikes.forEach(s=>{
   else ctx.lineTo(x,y);
 }
 ctx.stroke();
-
+*/
         if(Math.random()<0.001) emit(A1,B1);
       }
     }
@@ -388,6 +394,7 @@ loop(0);
 </script>
 </body>
 </html> 
+
 
 
 
