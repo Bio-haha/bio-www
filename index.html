@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Bio World Wide Web — Living Chaos</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png">
 <style>
 html,body{margin:0;padding:0;overflow:hidden;background:#020204}
 canvas{display:block}
@@ -24,22 +23,34 @@ addEventListener('resize',resize);resize();
   let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-  let A, master, voices=[], pulse, pg;
-  let audioStarted = false; 
+  const A = new (AudioContext||webkitAudioContext)();
+  const master=A.createGain();
+  master.gain.value=0.35;
+  master.connect(A.destination);
 
   function noiseNode(){
-  const buffer = A.createBuffer(1, A.sampleRate * 2, A.sampleRate);
-  const data = buffer.getChannelData(0);
+  const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const s=A.createBufferSource();
+  s.buffer=b; s.loop=true;
+  return s;
+}
 
-  for(let i=0;i<data.length;i++){
-    data[i] = Math.random()*2 - 1;
-  }
-
-  const src = A.createBufferSource();
-  src.buffer = buffer;
-  src.loop = true;
-
-  return src;
+  const voices=[];
+  for(let i=0;i<16;i++){
+    const o=A.createOscillator();
+    const n=noiseNode();
+    const f=A.createBiquadFilter();
+    const g=A.createGain();
+  o.type='sawtooth';
+  o.frequency.value=30+i*18;
+  f.type='bandpass';
+  g.gain.value=0;
+  o.connect(f); n.connect(f);
+  f.connect(g).connect(master);
+  o.start(); n.start();
+  voices.push({o,f,g,seed:Math.random()*10});
 }
 
 /* ===== FIELD ===== */
@@ -523,128 +534,41 @@ function loop(t){
   signals=signals.filter(s=>s.t<1); 
 
   // Audio
-  // Doksli: sin(age*4) lambat: 0.4
-  const chaos=Math.min(signals.length/25+Math.sin(age*0.4)*0.3+Math.cos(age*1.2)*0.2,1.2);
-  // Doksli amplitude, yang atas uji coba
-  //const chaos=Math.min(signals.length/20,1.5);
+  const chaos=Math.min(signals.length/20,1.5);
   voices.forEach((v,i)=>{
-    // Doksli Frequency
-/*
+    v.o.frequency.setTargetAtTime(
+      40+i*20+chaos*800*Math.sin(t*0.001+v.seed),
+      A.currentTime,0.12
+    );
     v.f.frequency.setTargetAtTime(
       300+chaos*5000,
       A.currentTime,0.15
     );
-*/
-    // Frequency uji coba
-    const base=55+(i%5)*22+Math.sin(age*0.3+v.seed)*4;
-    const drift=Math.sin(age*0.07+v.seed*10)*8+Math.cos(age*0.11 + i)*5;
-
-    v.o.frequency.setTargetAtTime(
-      base + drift + chaos*30,
-      A.currentTime,
-      0.6
-  );
-  
-    // Tambahan beat
-    const beat = Math.max(0,Math.sin(age*12));
-    pg.gain.setTargetAtTime(
-    beat*0.02*(chaos+0.3),
-    A.currentTime,0.05
-  );
-    pulse.frequency.setTargetAtTime(
-    70 + beat*60,
-    A.currentTime,0.05
-  );
-
-    // Doksli gain
-/*
     v.g.gain.setTargetAtTime(
       chaos*0.03,
       A.currentTime,0.2
-    );
-*/
-    // Gain uji coba
-    v.g.gain.setTargetAtTime(
-      0.03 + chaos*0.04,
-      A.currentTime,0.4
     );
   });
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.3',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.0',12,h-14);
 
   requestAnimationFrame(loop);
 }
 
-document.body.onclick = () => {
-  if(audioStarted) return;
-  audioStarted = true;
-
-  A = new (AudioContext||webkitAudioContext)();
-  master = A.createGain();
-  master.gain.value = 0.4;
-  master.connect(A.destination);
-
-  // DRONE
-  const drone = A.createOscillator();
-  const dg = A.createGain();
-  drone.type = 'sine';
-  drone.frequency.value = 55;
-  dg.gain.value = 0.08;
-  drone.connect(dg).connect(master);
-  drone.start();
-
-  // PULSE
-  pulse = A.createOscillator();
-  pg = A.createGain();
-  pulse.type = 'sine';
-  pulse.frequency.value = 90;
-  pg.gain.value = 0;
-  pulse.connect(pg).connect(master);
-  pulse.start();
-
-  // VOICES
-  for(let i=0;i<16;i++){
-    const o=A.createOscillator();
-    const n=noiseNode();
-    const f=A.createBiquadFilter();
-    const g=A.createGain();
-
-    o.type='triangle';
-    o.frequency.value=[55,73,82,110,146][i%5];
-
-    f.type='lowpass';
-    f.frequency.value=800;
-    f.Q.value=6;
-
-    g.gain.value=0.04; // Penting: Bukan 0
-
-    o.connect(f);
-    n.connect(f);
-    f.connect(g).connect(master);
-
-    o.start();
-    n.start();
-
-    voices.push({o,f,g,seed:Math.random()*10});
-  }
-
-  // Test Tone
-  const test=A.createOscillator();
-  const tg=A.createGain();
-  test.frequency.value=220;
-  tg.gain.value=0.05;
-  test.connect(tg).connect(master);
-  test.start();
-  setTimeout(()=>test.stop(),400);
-};
-
+document.body.onclick=()=>A.resume();
+loop(0);
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
+
+
+
+
 
 
 
