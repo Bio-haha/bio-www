@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Bio World Wide Web — Living Chaos</title>
-<link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 html,body{margin:0;padding:0;overflow:hidden;background:#020204}
@@ -24,122 +23,35 @@ addEventListener('resize',resize);resize();
   let age=0, phase=0;
 
 /* ===== AUDIO ===== */
-let audioStarted = false;
+  const A = new (AudioContext||webkitAudioContext)();
+  const master=A.createGain();
+  master.gain.value=0.35;
+  master.connect(A.destination);
 
-const A = new (AudioContext||webkitAudioContext)();
-const master=A.createGain();
-master.gain.value=0.35;
-master.connect(A.destination);
-
-// NOTE:
-// Jangan pernah memanggil .start() sebelum user gesture
-
-function noiseNode(){
+  function noiseNode(){
   const b=A.createBuffer(1,A.sampleRate*2,A.sampleRate);
   const d=b.getChannelData(0);
   for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   const s=A.createBufferSource();
-  s.buffer=b;
-  s.loop=true;
-  return s; // start() dipanggil nanti
-}
-
-  /* ===== AUDIO UTILS ===== */
-
-// Short burst exciter (Pengganti white noise kontinu)
-function burstNoise(duration=0.03){
-  const b=A.createBuffer(1, A.sampleRate*duration, A.sampleRate);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++){
-    d[i]=(Math.random()*2-1)*(1-i/d.length);
-  }
-  const s=A.createBufferSource();
-  s.buffer=b;
+  s.buffer=b; s.loop=true;
   return s;
 }
 
-// Simple resonator (ala Rings / Elements)
-function resonator(freq,Q=12){
-  const f=A.createBiquadFilter();
+  const voices=[];
+  for(let i=0;i<16;i++){
+    const o=A.createOscillator();
+    const n=noiseNode();
+    const f=A.createBiquadFilter();
+    const g=A.createGain();
+  o.type='sawtooth';
+  o.frequency.value=30+i*18;
   f.type='bandpass';
-  f.frequency.value=freq;
-  f.Q.value=Q;
-  return f;
+  g.gain.value=0;
+  o.connect(f); n.connect(f);
+  f.connect(g).connect(master);
+  o.start(); n.start();
+  voices.push({o,f,g,seed:Math.random()*10});
 }
-
-  /* ===== MODAL VOICES (Indian / Mutable style) ===== */
-
-const voices=[];
-
-// Skala India (just intonation-ish)
-const scaleRatios=[1, 9/8, 5/4, 4/3, 3/2, 5/3, 2];
-
-for(let i=0;i<7;i++){
-  const base=110; // drone dasar
-  const freq=base*scaleRatios[i];
-
-  // Resonator bank
-  const r1=resonator(freq*1,14);
-  const r2=resonator(freq*2,10);
-  const r3=resonator(freq*3,8);
-
-  const mix=A.createGain();
-  const out=A.createGain();
-  out.gain.value=0;
-
-  r1.connect(mix);
-  r2.connect(mix);
-  r3.connect(mix);
-  mix.connect(out).connect(master);
-
-  voices.push({
-    freq,
-    resonators:[r1,r2,r3],
-    out,
-    seed:Math.random()*100,
-    lastTrig:0
-  });
-}
-
-  /* ===== TANPURA DRONE ===== */
-
-  const tanpura=A.createOscillator();
-  const tanpura2=A.createOscillator();
-  const tanGain=A.createGain();
-
-  tanpura.type='sine';
-  tanpura2.type='sine';
-
-  tanpura.frequency.value=110;
-  tanpura2.frequency.value=110.6;
-
-  tanGain.gain.value=0.08;
-
-  tanpura.connect(tanGain);
-  tanpura2.connect(tanGain);
-  tanGain.connect(master);
-
-  tanpura.start();
-  tanpura2.start();
-
-  /* ===== BREATH TEXTURE ===== */
-
-  const breath=noiseNode();
-  const breathFilter=A.createBiquadFilter();
-  const breathGain=A.createGain();
-
-  breathFilter.type='bandpass';
-  breathFilter.frequency.value=1200;
-  breathFilter.Q.value=2;
-
-  breathGain.gain.value=0.02;
-
-  breath.connect(breathFilter)
-        .connect(breathGain)
-        .connect(master);
-
-  breath.start();
-
 
 /* ===== FIELD ===== */
   const scale=14;
@@ -622,65 +534,42 @@ function loop(t){
   signals=signals.filter(s=>s.t<1); 
 
   // Audio
-  
-  /* ===== AUDIO MODULATION ===== */
-  if(audioStarted){
-  const chaos=Math.min(signals.length/12,1.5);
-
-  voices.forEach(v=>{
-    // slow spectral drift
-      v.resonators.forEach((r,i)=>{
-      r.frequency.setTargetAtTime(
-      v.freq*(i+1)*(1+Math.sin(age*2+v.seed)*0.02),
-      A.currentTime,
-      0.2
+  const chaos=Math.min(signals.length/20,1.5);
+  voices.forEach((v,i)=>{
+    v.o.frequency.setTargetAtTime(
+      40+i*20+chaos*800*Math.sin(t*0.001+v.seed),
+      A.currentTime,0.12
+    );
+    v.f.frequency.setTargetAtTime(
+      300+chaos*5000,
+      A.currentTime,0.15
+    );
+    v.g.gain.setTargetAtTime(
+      chaos*0.03,
+      A.currentTime,0.2
     );
   });
 
-  // STRIKE ketika chaos naik
-  if(chaos>0.2 && age-v.lastTrig>0.02){
-    const b=burstNoise(0.02+chaos*0.04);
-    b.connect(v.resonators[0]);
-    b.start();
-    v.out.gain.setTargetAtTime(
-      0.15*chaos,
-      A.currentTime,
-      0.05
-    );
-    v.lastTrig=age;
-  }else{
-    v.out.gain.setTargetAtTime(
-      0.03,
-      A.currentTime,
-      0.2
-    );
-  }
-});
-  }
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network ZZ',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2.0',12,h-14);
 
   requestAnimationFrame(loop);
 }
 
-document.body.addEventListener('click', ()=>{
-  if(audioStarted) return;
-
-  A.resume();
-
-  tanpura.start();
-  tanpura2.start();
-  breath.start();
-
-  audioStarted = true;
-  loop(0);
-});
-  
+document.body.onclick=()=>A.resume();
+loop(0);
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
+
+
+
+
+
+
 
 
