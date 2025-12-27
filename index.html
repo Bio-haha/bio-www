@@ -230,10 +230,16 @@ function loop(t){
     s.head.vy -= wob;
     const dx=s.target.x-s.head.x;
     const dy=s.target.y-s.head.y; 
+    // Uji coba
+    const dz=s.target.x-s.head.y; 
+    
+// Versi ngasal
+    s.head.vx+=dx*(0.0018+dy)*dz;
+    s.head.vy+=dy*0.0018;
     
 // Versi santun
-    s.head.vx+=dx*0.0018;
-    s.head.vy+=dy*0.0018; 
+    //s.head.vx+=dx*0.0018;
+    //s.head.vy+=dy*0.0018; 
     
 // Versi lebih brutal namun lemot
 /*  const bias = Math.sin(age*200 + s.life) * 0.001;
@@ -407,3 +413,4 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025
+
