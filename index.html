@@ -201,14 +201,13 @@ for(let i=0;i<6;i++) createSpike();
         const dx=n.x-ex, dy=n.y-ey;
         const d=Math.hypot(dx,dy);
         if(d<70){n.vx+=dx*0.0002;n.vy+=dy*0.0002}
-      });
+      });     
     });
-  }
-    dead(){return this.mass<3||this.age>9000}
-
  // Tidak terpusat   
     this.x += Math.sin(age*10 + this.age)*0.2;
     this.y += Math.cos(age*12 - this.age)*0.2;
+  }
+    dead(){return this.mass<3||this.age>9000}
 }
 
 /* ===== SIGNALS ===== */
@@ -453,4 +452,5 @@ loop(0);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
