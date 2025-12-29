@@ -692,7 +692,7 @@ v.vca.gain.exponentialRampToValueAtTime(
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network XXX',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -739,12 +739,14 @@ v.vca.gain.exponentialRampToValueAtTime(
   audioStarted = true;
   loop(0); // visual + audio mulai bersama
 
+/*
     // === TEST TONE (HAPUS SETELAH BUNYI) ===
     const test = A.createOscillator();
     test.frequency.value = 220;
     test.connect(master);
     test.start();
     test.stop(A.currentTime + 0.4);
+*/
 
 });
 
@@ -753,4 +755,5 @@ v.vca.gain.exponentialRampToValueAtTime(
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
