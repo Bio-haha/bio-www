@@ -26,6 +26,7 @@ addEventListener('resize',resize);resize();
 /* ===== AUDIO ===== */
   let A, master;
   let audioStarted = false;
+  let exciterBus;
   let voices = []; 
   
   let lastControl = 0;
@@ -35,14 +36,28 @@ addEventListener('resize',resize);resize();
   let cloudDelay, cloudFeedback, cloudFilter;
 
   function excite() {
-  const b = A.createBuffer(1, A.sampleRate * 0.03, A.sampleRate);
+  const b = A.createBuffer(1, A.sampleRate * 0.12, A.sampleRate);
   const d = b.getChannelData(0);
+
   for (let i = 0; i < d.length; i++) {
-    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / 400);
+    d[i] =
+      (Math.random() * 2 - 1) *
+      Math.exp(-i / 1200);
   }
 
   const s = A.createBufferSource();
   s.buffer = b;
+
+  const g = A.createGain();
+  g.gain.setValueAtTime(1, A.currentTime);
+  g.gain.exponentialRampToValueAtTime(
+    0.001,
+    A.currentTime + 0.25
+  );
+
+  s.connect(g);
+  g.connect(exciterBus);
+
   return s;
 }
 
@@ -643,7 +658,7 @@ if (fire) {
     const e = excite();
     e.connect(v.bp);
     e.start();
-    e.stop(A.currentTime + 0.04);
+    e.stop(A.currentTime + 0.2);
     e.onended = () => e.disconnect();
 
     v.vca.gain.cancelScheduledValues(A.currentTime);
@@ -677,7 +692,7 @@ v.vca.gain.exponentialRampToValueAtTime(
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network ZZZ',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network XXX',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -691,6 +706,10 @@ v.vca.gain.exponentialRampToValueAtTime(
   master = A.createGain();
   master.gain.value = 0.35;
   master.connect(A.destination);
+
+  exciterBus = A.createGain();
+  exciterBus.gain.value = 0.6;
+  exciterBus.connect(master);
 
   initVoices(); 
 
@@ -719,6 +738,14 @@ v.vca.gain.exponentialRampToValueAtTime(
 
   audioStarted = true;
   loop(0); // visual + audio mulai bersama
+
+    // === TEST TONE (HAPUS SETELAH BUNYI) ===
+    const test = A.createOscillator();
+    test.frequency.value = 220;
+    test.connect(master);
+    test.start();
+    test.stop(A.currentTime + 0.4);
+
 });
 
 </script>
@@ -726,3 +753,4 @@ v.vca.gain.exponentialRampToValueAtTime(
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
