@@ -618,8 +618,8 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
   const scale = [0, 2, 3, 7, 10]; // pentatonic
 
   const fire =
-  marblesAudio(smoothChaos) &&
-  motionEnergy > 0.3;
+  marblesAudio(smoothChaos) ||
+  Math.random() < 0.02;
 
 if (fire) {
   voices.forEach((v, i) => {
@@ -647,11 +647,11 @@ if (fire) {
     e.onended = () => e.disconnect();
 
     v.vca.gain.cancelScheduledValues(A.currentTime);
-    v.vca.gain.setValueAtTime(0.08, A.currentTime);
-    v.vca.gain.exponentialRampToValueAtTime(
-      0.0001,
-      A.currentTime + 0.7 + smoothChaos * 0.4
-    );
+    v.vca.gain.setValueAtTime(0.12, A.currentTime);
+v.vca.gain.exponentialRampToValueAtTime(
+  0.001,
+  A.currentTime + 1.4 + smoothChaos * 0.6
+);
   });
 }
 
@@ -677,7 +677,7 @@ if (fire) {
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network XXX',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network ZZZ',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -705,13 +705,15 @@ if (fire) {
     cloudFilter.type = 'lowpass';
     cloudFilter.frequency.value = 4200;
 
-    // reroute master → clouds
-    master.disconnect();
+    // dry + wet routing (PARALLEL)
+    master.connect(A.destination);
+
     master.connect(cloudDelay);
     cloudDelay.connect(cloudFilter);
+    cloudFilter.connect(A.destination);
+
     cloudFilter.connect(cloudFeedback);
     cloudFeedback.connect(cloudDelay);
-    cloudFilter.connect(A.destination);
 
   // START SEMUA AUDIO NODE
 
@@ -724,5 +726,3 @@ if (fire) {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
-
-
