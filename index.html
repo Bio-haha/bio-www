@@ -637,9 +637,12 @@ if (audioStarted && A.currentTime - lastControl > 0.1) {
   Math.random() < 0.02;
 
 if (fire) {
-  voices.forEach((v, i) => {
-    if (Math.random() > 0.35) return;
+  const active = Math.floor(Math.random() * voices.length);
+  const spread = Math.random() < 0.3;
 
+  voices.forEach((v,i)=>{
+    if (i !== active && !(spread && Math.abs(i-active)===1)) return;
+    
     const note =
       110 *
       Math.pow(
@@ -650,9 +653,13 @@ if (fire) {
       );
 
     v.bp.frequency.setTargetAtTime(
-      note,
-      A.currentTime,
-      0.02
+    note * (1 + Math.sin(age * 1.5 + i) * 0.01),
+    A.currentTime,0.4);
+    // === Nafas ===
+    v.bp.Q.setTargetAtTime(
+    18 + smoothChaos * 25 + Math.sin(age * 4 + i) * 6,
+    A.currentTime,
+    0.6
     );
 
     const e = excite();
@@ -663,30 +670,37 @@ if (fire) {
 
     v.vca.gain.cancelScheduledValues(A.currentTime);
     v.vca.gain.setValueAtTime(0.12, A.currentTime);
-v.vca.gain.exponentialRampToValueAtTime(
-  0.001,
-  A.currentTime + 1.4 + smoothChaos * 0.6
+    v.vca.gain.exponentialRampToValueAtTime(
+    0.001,
+    A.currentTime + 1.4 + smoothChaos * 0.6
 );
   });
 }
 
   // === CLOUDS / BEADS SMEAR ===
   cloudDelay.delayTime.setTargetAtTime(
-    0.12 + smoothFlow * 0.08,
-    A.currentTime,
-    0.4
-  );
+  0.18 + Math.sin(age * 0.6) * 0.05,
+  A.currentTime,
+  0.8
+);
 
   cloudFilter.frequency.setTargetAtTime(
-    1400 + smoothChaos * 1800,
-    A.currentTime,
-    0.6
-  );
+  900 + smoothChaos * 1200 + Math.sin(age * 0.3) * 600,
+  A.currentTime,
+  1.2
+);
 
   cloudFeedback.gain.setTargetAtTime(
-  Math.min(0.45, 0.25 + smoothChaos * 0.15),
+  Math.min(0.78, 0.55 + smoothChaos * 0.18),
   A.currentTime,
-  0.6
+  1.0
+);
+
+  // === MASTER MICRO BREATH ===
+  master.gain.setTargetAtTime(
+  0.28 + Math.sin(age * 0.4) * 0.05,
+  A.currentTime,
+  1.5
 );
 }
 
@@ -712,6 +726,25 @@ v.vca.gain.exponentialRampToValueAtTime(
   exciterBus.connect(master);
 
   initVoices(); 
+
+      // === AMBIENT BED (Plaits-like drone) ===
+      const bedOsc = A.createOscillator();
+      bedOsc.type = 'triangle';
+      bedOsc.frequency.value = 55;
+
+      const bedFilter = A.createBiquadFilter();
+      bedFilter.type = 'lowpass';
+      bedFilter.frequency.value = 800;
+
+      const bedGain = A.createGain();
+      bedGain.gain.value = 0.04;
+
+      bedOsc.connect(bedFilter);
+      bedFilter.connect(bedGain);
+      bedGain.connect(master);
+
+      bedOsc.start();
+
 
      // === CLOUDS / BEADS SMEAR ===
     cloudDelay = A.createDelay();
@@ -755,5 +788,6 @@ v.vca.gain.exponentialRampToValueAtTime(
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
