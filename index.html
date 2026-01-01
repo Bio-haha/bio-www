@@ -652,9 +652,9 @@ if (fire) {
         ] / 12
       );
 
-    v.bp.frequency.setTargetAtTime(
-    note * (1 + Math.sin(age * 1.5 + i) * 0.01),
-    A.currentTime,0.4);
+    v.bp.Q.setTargetAtTime(
+    14 + smoothChaos * 20 + Math.sin(age * 2 + i) * 4, A.currentTime, 1.2);
+
     // === Nafas ===
     v.bp.Q.setTargetAtTime(
     18 + smoothChaos * 25 + Math.sin(age * 4 + i) * 6,
@@ -676,6 +676,34 @@ if (fire) {
 );
   });
 }
+
+  // === METAL / GLASS EVENTS ===
+if (collisionEnergy > 0.4 && Math.random() < 0.15) {
+  const m = metalVoices[
+    Math.floor(Math.random() * metalVoices.length)
+  ];
+
+  const freq =
+    1200 +
+    collisionEnergy * 1800 +
+    Math.sin(age * 6) * 200;
+
+  m.bp.frequency.setTargetAtTime(freq, A.currentTime, 0.02);
+
+  const e = excite();
+  e.connect(m.bp);
+  e.start();
+  e.stop(A.currentTime + 0.12);
+  e.onended = () => e.disconnect();
+
+  m.vca.gain.cancelScheduledValues(A.currentTime);
+  m.vca.gain.setValueAtTime(0.08, A.currentTime);
+  m.vca.gain.exponentialRampToValueAtTime(
+    0.001,
+    A.currentTime + 1.8
+  );
+}
+
 
   // === CLOUDS / BEADS SMEAR ===
   cloudDelay.delayTime.setTargetAtTime(
@@ -702,11 +730,24 @@ if (fire) {
   A.currentTime,
   1.5
 );
+
+  // === AIR / BREATH MODULATION ===
+airFilter.frequency.setTargetAtTime(
+  400 + smoothFlow * 1200 + Math.sin(age * 0.2) * 200,
+  A.currentTime,
+  2.5
+);
+
+airGain.gain.setTargetAtTime(
+  0.015 + smoothFlow * 0.04,
+  A.currentTime,
+  3.0
+);
 }
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network',12,h-14);
+  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2026',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -725,9 +766,40 @@ if (fire) {
   exciterBus.gain.value = 0.6;
   exciterBus.connect(master);
 
+    //metal
+    let metalVoices = [];
+
   initVoices(); 
 
-      // === AMBIENT BED (Plaits-like drone) ===
+      // Metal
+metalVoices.length = 0;
+
+function createMetal(freq){
+  const bp = A.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = freq;
+  bp.Q.value = 80; // lebih tajam
+
+  const hp = A.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 1200;
+
+  const vca = A.createGain();
+  vca.gain.value = 0;
+
+  bp.connect(hp);
+  hp.connect(vca);
+  vca.connect(master);
+
+  return { bp, vca };
+}
+
+for(let i=0;i<6;i++){
+  metalVoices.push(createMetal(800 + i*400));
+}
+
+
+      // === AmbientT Bed (Plaits-like drone) ===
       const bedOsc = A.createOscillator();
       bedOsc.type = 'triangle';
       bedOsc.frequency.value = 55;
@@ -743,8 +815,33 @@ if (fire) {
       bedFilter.connect(bedGain);
       bedGain.connect(master);
 
-      bedOsc.start();
+      bedOsc.start(); 
 
+// === AIR / BREATH PAD ===
+const airNoise = A.createBufferSource();
+const airBuf = A.createBuffer(1, A.sampleRate * 2, A.sampleRate);
+const airData = airBuf.getChannelData(0);
+
+for(let i=0;i<airData.length;i++){
+  airData[i] = (Math.random()*2-1) * 0.3;
+}
+
+airNoise.buffer = airBuf;
+airNoise.loop = true;
+
+const airFilter = A.createBiquadFilter();
+airFilter.type = 'bandpass';
+airFilter.frequency.value = 600;
+airFilter.Q.value = 0.6;
+
+const airGain = A.createGain();
+airGain.gain.value = 0.02;
+
+airNoise.connect(airFilter);
+airFilter.connect(airGain);
+airGain.connect(master);
+
+airNoise.start();
 
      // === CLOUDS / BEADS SMEAR ===
     cloudDelay = A.createDelay();
@@ -755,7 +852,7 @@ if (fire) {
 
     cloudFilter = A.createBiquadFilter();
     cloudFilter.type = 'lowpass';
-    cloudFilter.frequency.value = 4200;
+    cloudFilter.frequency.value = 4200; 
 
     // dry + wet routing (PARALLEL)
     master.connect(A.destination);
@@ -773,7 +870,7 @@ if (fire) {
   loop(0); // visual + audio mulai bersama
 
 /*
-    // === TEST TONE (HAPUS SETELAH BUNYI) ===
+    // === Test Tone (Hapus setelah bunyi) ===
     const test = A.createOscillator();
     test.frequency.value = 220;
     test.connect(master);
@@ -788,6 +885,7 @@ if (fire) {
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
