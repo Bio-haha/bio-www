@@ -42,7 +42,7 @@
   let voices = []; 
   let metalVoices = [];
   let cloudDelay, cloudFeedback, cloudFilter;
-  let airFilter, airGain;
+  let airGain;
   let airFilter = null;
 
   let lastControl = 0;
@@ -734,7 +734,7 @@
 
     ctx.fillStyle='rgba(180,220,255,0.45)';
     ctx.font='12px monospace';
-    ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
+    ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network HA',12,h-14);
 
     requestAnimationFrame(loop);
   }
@@ -746,7 +746,7 @@
     // ===== BUAT AUDIO CONTEXT SETELAH GESTURE ===== //
     A = new (AudioContext||webkitAudioContext)();
 
-    const airFilter = A.createBiquadFilter();
+    airFilter = A.createBiquadFilter();
     airFilter.type = 'bandpass';
     airFilter.frequency.value = 600;
     airFilter.Q.value = 0.6;
@@ -824,15 +824,10 @@
     const airGain = A.createGain();
     airGain.gain.value = 0.02;
 
-    airNoise.connect(airFilter);
-    airFilter.connect(airGain);
-    airGain.connect(master);
-
     airNoise.start(); 
 
     // Routingnya
     master.connect(airFilter);
-    airFilter.connect(airGain);
     airGain.connect(A.destination);
 
     // ===== CLOUDS / BEADS SMEAR ===== //
