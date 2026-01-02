@@ -5,7 +5,7 @@
     <title>Biohaha - Bio World Wide Web</title>
     <link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <style>
       html,body{margin:0;padding:0;overflow:hidden;background:#020204}
       canvas{display:block}
@@ -43,7 +43,8 @@
   let metalVoices = [];
   let cloudDelay, cloudFeedback, cloudFilter;
   let airFilter, airGain;
-  
+  let airFilter = null;
+
   let lastControl = 0;
   let smoothChaos = 0;
   let smoothFlow = 0;
@@ -550,7 +551,7 @@
     signals=signals.filter(s=>s.t<1); 
 
     // Audio ============================================================================= Audio Loop ===== //
-    if (audioStarted && A.currentTime - lastControl > 0.1) {
+    if (audioStarted&&A&&cloudFilter&&cloudDelay&&cloudFeedback&&A.currentTime-lastControl>0.1){
       lastControl = A.currentTime;
 
       // Chaos Dari Visual
@@ -564,6 +565,23 @@
       // Smoothing Biologis
       smoothChaos += (chaos - smoothChaos) * 0.25;
       smoothFlow  += (flowEnergy - smoothFlow) * 0.25; 
+
+      // === AIR MODULATION (BREATH) ===
+      if (airFilter) {
+        airFilter.frequency.setTargetAtTime(
+          600 +               // frekuensi dasar napas
+          smoothFlow * 900 +  // aliran visual → udara
+          Math.sin(age * 0.3) * 200, // osilasi lambat
+          A.currentTime,
+          1.2
+        );
+
+        airFilter.Q.setTargetAtTime(
+          0.4 + smoothChaos * 1.2,
+          A.currentTime,
+          1.5
+        );
+      }
 
       // ===== RINGS / PLUCKED RESONATORS ===== //
       const scale = [0, 2, 3, 7, 10]; // pentatonic
@@ -664,21 +682,21 @@
 
       // ===== CLOUDS / BEADS SMEAR ===== //
       cloudDelay.delayTime.setTargetAtTime(
-        0.18 + Math.sin(age * 0.6) * 0.05,
+        0.12 + smoothFlow * 0.08,
         A.currentTime,
-        0.8
+        0.4
       );
 
       cloudFilter.frequency.setTargetAtTime(
-        900 + smoothChaos*1200 + Math.sin(age*0.3)*600,
+        Math.min(6000, 1400 + smoothChaos * 1800),
         A.currentTime,
-        1.2
+        0.6
       );
 
       cloudFeedback.gain.setTargetAtTime(
-        Math.min(0.78, 0.55 + smoothChaos * 0.18),
+        0.45 + smoothChaos * 0.25,
         A.currentTime,
-        1.0
+        0.6
       );
 
       // ===== MASTER MICRO BREATH ===== //
@@ -727,6 +745,16 @@
 
     // ===== BUAT AUDIO CONTEXT SETELAH GESTURE ===== //
     A = new (AudioContext||webkitAudioContext)();
+
+    const airFilter = A.createBiquadFilter();
+    airFilter.type = 'bandpass';
+    airFilter.frequency.value = 600;
+    airFilter.Q.value = 0.6;
+
+    // routing
+    exciterBus.connect(airFilter);
+    airFilter.connect(master);
+    
     lastTrigTime = A.currentTime;
     master = A.createGain();
     master.gain.value = 0.35;
@@ -792,11 +820,6 @@
 
     airNoise.buffer = airBuf;
     airNoise.loop = true; 
-
-    const airFilter = A.createBiquadFilter();
-    airFilter.type = 'bandpass';
-    airFilter.frequency.value = 600;
-    airFilter.Q.value = 0.6;
 
     const airGain = A.createGain();
     airGain.gain.value = 0.02;
