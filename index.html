@@ -1,33 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Bio World Wide Web — Living Chaos</title>
-<link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png"> 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-html,body{margin:0;padding:0;overflow:hidden;background:#020204}
-canvas{display:block}
-</style>
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <title>Biohaha - Bio World Wide Web</title>
+    <link rel="shortcut icon" type="image/x-icon" href="img/biohaha-icon.png"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+      html,body{margin:0;padding:0;overflow:hidden;background:#020204}
+      canvas{display:block}
+    </style>
+  </head>
+
 <body>
 <canvas id="c"></canvas>
 
+// ==================== SCRIPT ==================== //
+
 <script>
   function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
+    return Math.max(min, Math.min(max, v));
+  }
 
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let w,h;
-function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
-addEventListener('resize',resize);resize(); 
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let w,h; 
 
-/* ===== TIME ===== */
-  let age=0, phase=0;
+  function resize(){
+    w=canvas.width=innerWidth;h=canvas.height=innerHeight
+  }
 
-/* ===== AUDIO ===== */
+  addEventListener('resize',resize);resize(); 
+
+  /* ===== TIME ===== */
+    let age=0, phase=0;
+
+  /* ===== AUDIO =============================================================== AUDIO ===== */
   let A, master;
   let audioStarted = false;
   let exciterBus;
@@ -39,97 +47,97 @@ addEventListener('resize',resize);resize();
   let lastControl = 0;
   let smoothChaos = 0;
   let smoothFlow = 0;
-
+  
   function excite() {
-  const b = A.createBuffer(1, A.sampleRate * 0.12, A.sampleRate);
-  const d = b.getChannelData(0);
+    const b = A.createBuffer(1, A.sampleRate * 0.12, A.sampleRate);
+    const d = b.getChannelData(0);
 
-  for (let i = 0; i < d.length; i++) {
-    d[i] =
+    for (let i = 0; i < d.length; i++) {
+      d[i] =
       (Math.random() * 2 - 1) *
       Math.exp(-i / 1200);
+    }
+
+      const s = A.createBufferSource();
+      s.buffer = b;
+
+      const g = A.createGain();
+      g.gain.setValueAtTime(1, A.currentTime);
+      g.gain.exponentialRampToValueAtTime(
+        0.001,
+        A.currentTime + 0.25
+      );
+
+      s.connect(g);
+      g.connect(exciterBus);
+
+      return s;
   }
-
-  const s = A.createBufferSource();
-  s.buffer = b;
-
-  const g = A.createGain();
-  g.gain.setValueAtTime(1, A.currentTime);
-  g.gain.exponentialRampToValueAtTime(
-    0.001,
-    A.currentTime + 0.25
-  );
-
-  s.connect(g);
-  g.connect(exciterBus);
-
-  return s;
-}
 
   let lastTrigTime = 0;
 
   function marblesAudio(chaos){
-  const now = A.currentTime;
+    const now = A.currentTime;
+    // Interval Biologis (Detik)
+    const interval = 0.6 - chaos * 0.3; // Chaos ↑ → lebih rapat
 
-  // interval biologis (detik)
-  const interval = 0.6 - chaos * 0.3; // chaos ↑ → lebih rapat
-
-  if (now - lastTrigTime > interval) {
-    lastTrigTime = now;
-    return Math.random() < 0.6;
+    if (now - lastTrigTime > interval) {
+      lastTrigTime = now;
+      return Math.random() < 0.6;
+    }
+    return false;
   }
-  return false;
-}
 
   function initVoices(){
-  voices.length = 0;
-  metalVoices.length = 0;
+    voices.length = 0;
+    metalVoices.length = 0;
 
-  function createResonator(freq){
-  const bp = A.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = freq;
-  bp.Q.value = 35;
+    function createResonator(freq){
+      const bp = A.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = freq;
+      bp.Q.value = 35;
 
-  const vca = A.createGain();
-  vca.gain.value = 0;
+      const vca = A.createGain();
+      vca.gain.value = 0;
+      bp.connect(vca);
+      vca.connect(master);
 
-  bp.connect(vca);
-  vca.connect(master);
+      return { bp, vca };
+    }
 
-  return { bp, vca };
-}
+    // Polyphonic Resonator Bank
+    for(let i=0;i<10;i++){
+      voices.push(createResonator(110 + i*70));
+    }
 
-// polyphonic resonator bank
-for(let i=0;i<10;i++){
-  voices.push(createResonator(110 + i*70));
-}
+    // ===== Metal / Glass Resonators ===== //
+    for(let i=0;i<6;i++){
+      const bp = A.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1200 + i * 900;
+      bp.Q.value = 80; // tajam = metal
 
-// === METAL / GLASS RESONATORS ===
-for(let i=0;i<6;i++){
-  const bp = A.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 1200 + i * 900;
-  bp.Q.value = 80; // tajam = metal
+      const vca = A.createGain();
+      vca.gain.value = 0;
 
-  const vca = A.createGain();
-  vca.gain.value = 0;
+      bp.connect(vca);
+      vca.connect(master);
 
-  bp.connect(vca);
-  vca.connect(master);
+      metalVoices.push({ bp, vca });
+    }
+  }
 
-  metalVoices.push({ bp, vca });
-}
-}
-
-/* ===== FIELD ===== */
+  /* ===== FIELD ===== */
   const scale=14;
   let cols,rows,angle=[],dens=[];
+
   function buildField(){
-  cols=(w/scale)|0; rows=(h/scale)|0;
-  angle=[...Array(cols)].map(()=>Array(rows).fill(0));
-  dens=[...Array(cols)].map(()=>Array(rows).fill(0));
-}
+    cols=(w/scale)|0; rows=(h/scale)|0;
+    angle=[...Array(cols)].map(()=>Array(rows).fill(0));
+    dens=[...Array(cols)].map(()=>Array(rows).fill(0));
+  }
+
   buildField();
 
   function updateField(t){
@@ -138,765 +146,673 @@ for(let i=0;i<6;i++){
     for(let i=0;i<30;i++){
       const x = (Math.random()*cols)|0;
       const y = (Math.random()*rows)|0;
-    flowEnergy += Math.abs(angle[x][y]);
-}
-      flowEnergy = Math.min(flowEnergy / 30, 3);
+      flowEnergy += Math.abs(angle[x][y]);
+    }
+
+    flowEnergy = Math.min(flowEnergy / 30, 3);
     
-      const drift=Math.sin(t*0.00003+age)*0.6;
-  for(let x=0;x<cols;x++){
-  for(let y=0;y<rows;y++){
-      const nx=x*0.16+drift, ny=y*0.16-drift;
-      const mut=Math.sin(age*2+x*0.02)*0.6;
-      const a=
+    const drift=Math.sin(t*0.00003+age)*0.6;
+
+    for(let x=0;x<cols;x++){
+      for(let y=0;y<rows;y++){
+        const nx=x*0.16+drift, ny=y*0.16-drift;
+        const mut=Math.sin(age*2+x*0.02)*0.6;
+        const a=
         Math.sin(nx+t*0.00035+mut)+
         Math.cos(ny-t*0.0003-mut);
-      const n=Math.sin(nx*ny*0.025+t*0.00025);
-      angle[x][y]=a+n*3;
-      dens[x][y]=Math.abs(n);
+        const n=Math.sin(nx*ny*0.025+t*0.00025);
+        angle[x][y]=a+n*3;
+        dens[x][y]=Math.abs(n);
+      }
     }
   }
-}
 
-/* ===== NODES ===== */
+  /* ===== NODES ===== */
   class Node{
-  constructor(){
-    this.x=Math.random()*w;
-    this.y=Math.random()*h;
-    this.trail = Array.from({length:16},()=>({x:this.x,y:this.y}));
-    this.vx=0; this.vy=0;
-    this.h=Math.random()*360;
-  }
-  move(){
-    const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
-    const a=(angle[ix]&&angle[ix][iy])||0;
-    const d=(dens[ix]&&dens[ix][iy])||0;
-    this.vx+=Math.cos(a)*(0.08+d*0.25);
-    this.vy+=Math.sin(a)*(0.08+d*0.25);
-    this.vx+=Math.sin(this.y*0.01+age)*0.3;
-    this.vy+=Math.cos(this.x*0.01-age)*0.3;
-    this.vx*=0.92; this.vy*=0.92;
-    this.x=(this.x+this.vx+w)%w;
-    this.y=(this.y+this.vy+h)%h; 
-    this.trail.pop();
-    this.trail.unshift({x:this.x,y:this.y});
-  }
-} 
+    constructor(){
+      this.x=Math.random()*w;
+      this.y=Math.random()*h;
+      this.trail = Array.from({length:16},()=>({x:this.x,y:this.y}));
+      this.vx=0; this.vy=0;
+      this.h=Math.random()*360;
+    }
+
+    move(){
+      const ix=(this.x/scale)|0, iy=(this.y/scale)|0;
+      const a=(angle[ix]&&angle[ix][iy])||0;
+      const d=(dens[ix]&&dens[ix][iy])||0;
+      this.vx+=Math.cos(a)*(0.08+d*0.25);
+      this.vy+=Math.sin(a)*(0.08+d*0.25);
+      this.vx+=Math.sin(this.y*0.01+age)*0.3;
+      this.vy+=Math.cos(this.x*0.01-age)*0.3;
+      this.vx*=0.92; this.vy*=0.92;
+      this.x=(this.x+this.vx+w)%w;
+      this.y=(this.y+this.vy+h)%h; 
+      this.trail.pop();
+      this.trail.unshift({x:this.x,y:this.y});
+    }
+  } 
+
   function nearestNode(x,y){
-  let m=1e9, t=null;
-  for(const n of nodes){
-    const dx=n.x-x, dy=n.y-y;
-    const d=dx*dx+dy*dy;
-    if(d<m){ m=d; t=n; }
+    let m=1e9, t=null;
+
+    for(const n of nodes){
+      const dx=n.x-x, dy=n.y-y;
+      const d=dx*dx+dy*dy;
+      if(d<m){ m=d; t=n; }
+    }
+    return t;
   }
-  return t;
-}
   
-/* ===== SPIKES (FUNGAL TENDRILS) ===== */
+  /* ===== SPIKES (FUNGAL TENDRILS) ===== */
   const spikes=[];
 
   function createSpike(){
-  const n = nodes[Math.floor(Math.random()*nodes.length)];
-  const s = {
-    head:{ x:n.x, y:n.y, vx:0, vy:0 },
-    fibers:[],
-    target:null,
-    life:800+Math.random()*1600
-  };
+    const n = nodes[Math.floor(Math.random()*nodes.length)];
+    const s = {
+      head:{ x:n.x, y:n.y, vx:0, vy:0 },
+      fibers:[],
+      target:null,
+      life:800+Math.random()*1600
+    };
 
-  const fiberCount = 30 + Math.random()*40;
+    const fiberCount = 30 + Math.random()*40;
 
-  for(let f=0;f<fiberCount;f++){
-    const pts=[];
-    for(let i=0;i<14;i++){
-      pts.push({x:s.head.x,y:s.head.y});
-    }
-    s.fibers.push({
-      pts,
-      stick:0.18+Math.random()*0.2,
-      drift:Math.random()*10
-    });
-  }
-  spikes.push(s);
-}
-
-let nodes=[...Array(520)].map(()=>new Node()); 
-for(let i=0;i<6;i++) createSpike(); 
-
-/* ===== COLONIES ===== */
-  let colonies=[];
-  class Colony{
-  constructor(){
-    this.x=Math.random()*w;
-    this.y=Math.random()*h;
-    this.mass=10;
-    this.energy=1;
-    this.age=0;
-    this.branches=[];
-    this.h=80+Math.random()*100;
-
-    // Tambahan uji coba
-    this.vx = 0;
-    this.vy = 0;
-    this.drift = Math.random()*1000;
-    this.life = 4000 + Math.random()*4000;
-  }
-    
-  grow(){
-    this.age++;
-    
-    // Tambahan life
-    this.life--;
-    if(this.life < 0){this.energy *= 0.95;this.mass *= 0.98;
-}   // Akhir tambahan
-    
-    this.energy+=0.02-Math.sin(age*0.1)*0.015;
-    if(Math.random()<this.energy*0.02 && this.branches.length<50){
-      
-    // Doksli branches 
-      //this.branches.push({a:Math.random()*Math.PI*2,l:2});
-      
-    // Branches uji coba 
-      this.branches.push({a: Math.random()*Math.PI*2,l:2,wob: Math.random()*10,bend: (Math.random()-0.5)*0.4});  
-      
-    }
-    this.mass+=this.energy*0.04;
-    if(this.energy<0.2) this.mass*=0.995;
-  }
-
-  flow(){
-  const ix = (this.x / scale) | 0;
-  const iy = (this.y / scale) | 0;
-  const a = (angle[ix] && angle[ix][iy]) || 0;
-  const d = (dens[ix] && dens[ix][iy]) || 0;
-
-  // Arus utama
-  this.vx += Math.cos(a) * (0.03 + d*0.08);
-  this.vy += Math.sin(a) * (0.03 + d*0.08);
-
-  // Arus liar biologis
-  this.vx += Math.sin(age*20 + this.drift) * 0.02;
-  this.vy += Math.cos(age*18 + this.drift) * 0.02;
-
-  // Redaman air
-  this.vx *= 0.96;
-  this.vy *= 0.96;
-
-  this.x = (this.x + this.vx + w) % w;
-  this.y = (this.y + this.vy + h) % h;
-}
-
-/* Doksli draw ()
-  draw(){
-    // Doksli warna
-        //ctx.strokeStyle=`hsla(${this.h},100%,60%,0.25)`; 
-    // Warna uji coba
-          ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
-    
-    ctx.lineWidth=0.6;
-    this.branches.forEach(b=>{
-      b.l+=this.energy*0.4;
-
-    // Doksli sin cos
-      //const ex=this.x+Math.cos(b.a)*b.l;
-      //const ey=this.y+Math.sin(b.a)*b.l; 
-      
-    // Sin Cos uji coba
-      const wob = Math.sin(age*40 + b.wob + b.l*0.1) * 12;
-      const bend = Math.cos(age*30 + b.wob) * b.bend;
-
-      const ex = this.x + Math.cos(b.a + bend) * b.l + wob;
-      const ey = this.y + Math.sin(b.a - bend) * b.l - wob;
-      // Batas akhir
-      
-      ctx.beginPath();
-      ctx.moveTo(this.x,this.y);
-      ctx.lineTo(ex,ey);
-      ctx.stroke();
-      nodes.forEach(n=>{
-        const dx=n.x-ex, dy=n.y-ey;
-        const d=Math.hypot(dx,dy);
-        if(d<70){n.vx+=dx*0.0002;n.vy+=dy*0.0002}
-      });     
-    });
- // Tidak terpusat   
-    this.x += Math.sin(age*10 + this.age)*0.2;
-    this.y += Math.cos(age*12 - this.age)*0.2;
-  }
-  */
-    
-// Draw uji coba
-  draw(){
-  // Warna doksli
-  //ctx.strokeStyle = `hsla(${this.h},90%,60%,0.18)`;
-  // Warna uji coba
-  ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
-  ctx.lineWidth = 0.5;
-
-  this.branches.forEach(b=>{
-    b.l += this.energy * 0.4;
-
-    let px = this.x;
-    let py = this.y;
-
-    const steps = Math.floor(b.l / 6);
-
-    for(let i=0;i<steps;i++){
-      const t = i / steps;
-
-      const bend = Math.sin(age*12 + i*0.6 + b.a) * 0.6;
-      const drift = (Math.random()-0.5) * 8;
-
-      const ang = b.a + bend;
-
-      const nx =
-        this.x +
-        Math.cos(ang) * b.l * t +
-        Math.sin(age*20 + i) * drift;
-
-      const ny =
-        this.y +
-        Math.sin(ang) * b.l * t +
-        Math.cos(age*18 + i) * drift;
-
-      ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(nx, ny);
-      ctx.stroke();
-
-      px = nx;
-      py = ny;
-    }
-
-    // Interaksi tetap di ujung terluar
-    nodes.forEach(n=>{
-      const dx = n.x - px;
-      const dy = n.y - py;
-      const d = Math.hypot(dx,dy);
-      if(d < 60){
-        n.vx += dx * 0.00015;
-        n.vy += dy * 0.00015;
+    for(let f=0;f<fiberCount;f++){
+      const pts=[];
+      for(let i=0;i<14;i++){
+        pts.push({x:s.head.x,y:s.head.y});
       }
-    });
-  });
+      s.fibers.push({
+        pts,
+        stick:0.18+Math.random()*0.2,
+        drift:Math.random()*10
+      });
+    }
+    spikes.push(s);
+  }
 
-  // Pusat tidak stabil
-  this.x += (Math.random()-0.5)*0.4;
-  this.y += (Math.random()-0.5)*0.4;
+  let nodes=[...Array(520)].map(()=>new Node()); 
+  for(let i=0;i<6;i++) createSpike(); 
 
-  // Cabang tidak abadi
-  this.branches = this.branches.filter(b => b.l < 260);
-}
+  /* ===== COLONIES ===== */
+  let colonies=[];
+
+  class Colony{
+    constructor(){
+      this.x=Math.random()*w;
+      this.y=Math.random()*h;
+      this.mass=10;
+      this.energy=1;
+      this.age=0;
+      this.branches=[];
+      this.h=80+Math.random()*100;
+      this.vx = 0;
+      this.vy = 0;
+      this.drift = Math.random()*1000;
+      this.life = 4000 + Math.random()*4000;
+    }
+    
+    grow(){
+      this.age++;
+      this.life--;
+
+      if(this.life < 0){
+        this.energy *= 0.95;this.mass *= 0.98;
+      }
+    
+      this.energy+=0.02-Math.sin(age*0.1)*0.015;
+      if(Math.random()<this.energy*0.02 && this.branches.length<50){   
+        this.branches.push({
+          a: Math.random()*
+          Math.PI*
+          2,l:2,wob:Math.random()*
+          10,bend: (Math.random()-0.5)*
+          0.4
+        });   
+      }
+
+      this.mass+=this.energy*0.04;
+      if(this.energy<0.2) this.mass*=0.995;
+    }
+
+    flow(){
+      const ix = (this.x / scale) | 0;
+      const iy = (this.y / scale) | 0;
+      const a = (angle[ix] && angle[ix][iy]) || 0;
+      const d = (dens[ix] && dens[ix][iy]) || 0;
+
+      // Arus Utama
+      this.vx += Math.cos(a) * (0.03 + d*0.08);
+      this.vy += Math.sin(a) * (0.03 + d*0.08);
+
+      // Arus Liar Biologis
+      this.vx += Math.sin(age*20 + this.drift) * 0.02;
+      this.vy += Math.cos(age*18 + this.drift) * 0.02;
+
+      // Redaman Air
+      this.vx *= 0.96;
+      this.vy *= 0.96;
+
+      this.x = (this.x + this.vx + w) % w;
+      this.y = (this.y + this.vy + h) % h;
+    }
+
+    draw(){
+      ctx.strokeStyle = `hsla(${this.h + Math.sin(age*20)*40},90%,65%,0.12)`;
+      ctx.lineWidth = 0.5;
+
+      this.branches.forEach(b=>{
+        b.l += this.energy * 0.4;
+
+        let px = this.x;
+        let py = this.y;
+
+        const steps = Math.floor(b.l / 6);
+
+        for(let i=0;i<steps;i++){
+          const t = i / steps;
+          const bend = Math.sin(age*12 + i*0.6 + b.a) * 0.6;
+          const drift = (Math.random()-0.5) * 8;
+          const ang = b.a + bend;
+
+          const nx =
+          this.x +
+          Math.cos(ang) * b.l * t +
+          Math.sin(age*20 + i) * drift;
+
+          const ny =
+          this.y +
+          Math.sin(ang) * b.l * t +
+          Math.cos(age*18 + i) * drift;
+
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(nx, ny);
+          ctx.stroke();
+
+          px = nx;
+          py = ny;
+        }
+
+        // Interaksi Tetap di Ujung Terluar
+        nodes.forEach(n=>{
+          const dx = n.x - px;
+          const dy = n.y - py;
+          const d = Math.hypot(dx,dy);
+
+          if(d < 60){
+            n.vx += dx * 0.00015;
+            n.vy += dy * 0.00015;
+          }
+        });
+      });
+
+      // Pusat Tidak Stabil
+      this.x += (Math.random()-0.5)*0.4;
+      this.y += (Math.random()-0.5)*0.4;
+
+      // Cabang Tidak Abadi
+      this.branches = this.branches.filter(b => b.l < 260);
+    }
   
-  // Akhir kata dari Colonies  
-  // Doksli dead
-    //dead(){return this.mass<3||this.age>9000}
-  // Dead uji coba
     dead(){return this.mass < 2 || this.energy < 0.05;}
+  }
 
-}
+  // =================================================== //
+  /* =============== Akhir Dari Colonies =============== */
+  // =================================================== //
 
-/* ===== SIGNALS ===== */
+  /* ===== SIGNALS ===== */
   let signals=[];
   function emit(a,b){
-  signals.push({a,b,t:0,v:0.01+Math.random()*0.05,h:Math.random()*360});
-}
+    signals.push({a,b,t:0,v:0.01+Math.random()*
+    0.05,h:Math.random()*
+    360
+    });
+  }
 
-/* ===== LOOP ===== */
-  // Tambahan baru
+  /* ===== LOOP ============================================================================= LOOP ===== */
   let motionEnergy = 0;
   let collisionEnergy = 0;
   let flowEnergy = 0;
 
-function loop(t){
-  // Reset / Decay energy per frame
-  collisionEnergy *= 0.94+Math.sin(age*2)*0.02;
-  motionEnergy *= 0.94;
-  flowEnergy *= 0.96;
+  function loop(t){
+    // Reset / Decay Energy per Frame
+    collisionEnergy *= 0.94+Math.sin(age*2)*0.02;
+    motionEnergy *= 0.94;
+    flowEnergy *= 0.96;
 
-  age += 0.0002;
-  age+=0.00002;
-  phase*=0.995;
-  if(Math.random()<0.0005) phase=1;
+    age += 0.0002;
+    age+=0.00002;
+    phase*=0.995;
+    if(Math.random()<0.0005) phase=1;
 
-  ctx.fillStyle = `rgba(2,2,4,${0.015 + Math.sin(age*5)*0.01})`;
-  ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = `rgba(2,2,4,${0.015 + Math.sin(age*5)*0.01})`;
+    ctx.fillRect(0,0,w,h);
 
-  updateField(t);
-  nodes.forEach(n=>n.move());
+    updateField(t);
+    nodes.forEach(n=>n.move());
+    motionEnergy = 0;
 
-  // Tambahan baru 
-  motionEnergy = 0;
+    nodes.forEach(n=>{
+      const v = Math.hypot(n.vx, n.vy);
+      motionEnergy += v;
+    });
 
-nodes.forEach(n=>{
-  const v = Math.hypot(n.vx, n.vy);
-  motionEnergy += v;
-});
+    motionEnergy = Math.min(motionEnergy / nodes.length, 4);
 
-motionEnergy = Math.min(motionEnergy / nodes.length, 4);
-
-
-/* ===== SPIKE METABOLISM ===== */
-  spikes.forEach(s=>{
-  s.life--;
-  if(s.life<0){
-    s.target=null;
-    s.life=400+Math.random()*1000;
-  }
+    /* ===== SPIKE METABOLISM ===== */
+    spikes.forEach(s=>{
+      s.life--;
+      if(s.life<0){
+        s.target=null;
+        s.life=400+Math.random()*1000;
+      }
   
-  if(s.target){
-  const dx=s.target.x-s.head.x;
-  const dy=s.target.y-s.head.y;
-  if(dx*dx+dy*dy<400){
-    s.target=null;
-  }
-}
+      if(s.target){
+        const dx=s.target.x-s.head.x;
+        const dy=s.target.y-s.head.y;
 
-  if(!s.target || Math.random()<0.004){
-    s.target=nearestNode(s.head.x,s.head.y);
-  }
+        if(dx*dx+dy*dy<400){
+          s.target=null;
+        }
+      }
 
-  if(s.target){
-    const wob = Math.sin(age*120+s.life)*0.6;
-    s.head.vx += wob;
-    s.head.vy -= wob;
-    const dx=s.target.x-s.head.x;
-    const dy=s.target.y-s.head.y; 
-    // Uji coba
-    //const dz=s.target.x-s.head.y; 
+      if(!s.target || Math.random()<0.004){
+        s.target=nearestNode(
+          s.head.x,
+          s.head.y
+        );
+      }
 
-// Versi santun
-    //s.head.vx+=dx*0.0018;
-    //s.head.vy+=dy*0.0018; 
+      if(s.target){
+        const wob = Math.sin(age*120+s.life)*0.6;
+        s.head.vx += wob;
+        s.head.vy -= wob;
+        const dx=s.target.x-s.head.x;
+        const dy=s.target.y-s.head.y; 
+
+        const swirl = Math.sin(age*180 + s.life) * 0.002;
+        const slip  = Math.cos(age*140 + s.head.x*0.01) * 0.002;
+
+        s.head.vx += dx*0.0012 - dy*swirl;
+        s.head.vy += dy*0.0012 + dx*slip;
+      }
+
+      s.head.vx*=0.91;
+      s.head.vy*=0.91;
+      s.head.x+=s.head.vx;
+      s.head.y+=s.head.vy;
+
+      let px=s.head.x, py=s.head.y;
+      s.fibers.forEach(f=>{
+        const pts=f.pts;
+
+        // Head Attract
+        pts[0].x += (s.head.x-pts[0].x)*0.4;
+        pts[0].y += (s.head.y-pts[0].y)*0.4;
+
+        for(let i=1;i<pts.length;i++){
+          const p=pts[i], prev=pts[i-1];
+
+          const ix = ((p.x + Math.sin(p.y*0.02)*12) / scale) | 0;
+          const iy = ((p.y + Math.cos(p.x*0.02)*12) / scale) | 0;
+
+          const fa=(angle[ix]&&angle[ix][iy])||0;
+
+          const nx=Math.cos(fa+age*80+f.drift)*0.6;
+          const ny=Math.sin(fa+age*80+f.drift)*0.6; 
+
+          s.head.vx += Math.cos(fa)*0.6;
+          s.head.vy += Math.sin(fa)*0.6;
+
+          p.x += (prev.x-p.x)*f.stick + nx;
+          p.y += (prev.y-p.y)*f.stick + ny;
+        }
     
-// Versi ngasal
-    //s.head.vx+=dx*(0.0018+dy)*dz;
-    //s.head.vy+=dy*0.0018; 
-
-// Versi melilit 
-    const swirl = Math.sin(age*180 + s.life) * 0.002;
-    const slip  = Math.cos(age*140 + s.head.x*0.01) * 0.002;
-
-    s.head.vx += dx*0.0012 - dy*swirl;
-    s.head.vy += dy*0.0012 + dx*slip;
-   
-// Versi lebih brutal namun lemot
-/*  const bias = Math.sin(age*200 + s.life) * 0.001;
-    const slip = Math.cos(age*140 + s.head.x*0.01) * 0.001;
-
-    s.head.vx += dx * (0.0015 + bias) - dy * slip;
-    s.head.vy += dy * (0.0015 + bias) + dx * slip; 
-*/
-  }
-
-  s.head.vx*=0.91;
-  s.head.vy*=0.91;
-  s.head.x+=s.head.vx;
-  s.head.y+=s.head.vy;
-
-  let px=s.head.x, py=s.head.y;
-  s.fibers.forEach(f=>{
-  const pts=f.pts;
-
-// Head attract
-    pts[0].x += (s.head.x-pts[0].x)*0.4;
-    pts[0].y += (s.head.y-pts[0].y)*0.4;
-
-    for(let i=1;i<pts.length;i++){
-    const p=pts[i], prev=pts[i-1];
-
-    const ix = ((p.x + Math.sin(p.y*0.02)*12) / scale) | 0;
-    const iy = ((p.y + Math.cos(p.x*0.02)*12) / scale) | 0;
-
-    const fa=(angle[ix]&&angle[ix][iy])||0;
-
-    const nx=Math.cos(fa+age*80+f.drift)*0.6;
-    const ny=Math.sin(fa+age*80+f.drift)*0.6; 
-
-    s.head.vx += Math.cos(fa)*0.6;
-    s.head.vy += Math.sin(fa)*0.6;
-
-    p.x += (prev.x-p.x)*f.stick + nx;
-    p.y += (prev.y-p.y)*f.stick + ny;
-  }
-    
-// Segmen pertama nempel ke head
-    pts[0].x += (s.head.x-pts[0].x)*0.45;
-    pts[0].y += (s.head.y-pts[0].y)*0.45;
-  })
-});
+        // Segmen Pertama Nempel ke Head
+        pts[0].x += (s.head.x-pts[0].x)*0.45;
+        pts[0].y += (s.head.y-pts[0].y)*0.45;
+      })
+    });
   
-  nodes.forEach(n=>{
-  ctx.strokeStyle=`hsla(${n.h},90%,70%,0.12)`;
-  ctx.lineWidth=0.7;
-  ctx.beginPath();
+    nodes.forEach(n=>{
+      ctx.strokeStyle=`hsla(${n.h},90%,70%,0.12)`;
+      ctx.lineWidth=0.7;
+      ctx.beginPath();
       
-  n.trail.forEach((p,i)=>{
-  const jitter = Math.sin(i*13.7 + n.h + age*200) * 0.8;
-  const shear  = Math.cos(p.y*0.03 + age*50) * 0.6;
+      n.trail.forEach((p,i)=>{
+        const jitter = Math.sin(i*13.7 + n.h + age*200) * 0.8;
+        const shear  = Math.cos(p.y*0.03 + age*50) * 0.6;
 
-  if(i===0) ctx.moveTo(p.x,p.y);
-  else ctx.lineTo(
-    p.x + jitter,
-    p.y + shear
-  );
-});
+        if(i===0) ctx.moveTo(p.x,p.y);
+        else ctx.lineTo(
+          p.x + jitter,
+          p.y + shear
+        );
+      });
 
-  ctx.stroke();
-});
+      ctx.stroke();
+    });
 
-/* ===== NETWORK ===== */
-  for(let i=0;i<nodes.length;i++){
-    for(let j=i+1;j<nodes.length;j++){
-      const A1=nodes[i],B1=nodes[j];
-      const dx=A1.x-B1.x, dy=A1.y-B1.y;
-      const d=Math.hypot(dx,dy);
-      if(d<170){
-        collisionEnergy += (170 - d) * 0.00003;
-        ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
-        ctx.lineWidth=0.45; 
-        ctx.beginPath();
-        
-// Doksli
-        ctx.moveTo(A1.x,A1.y);
-        ctx.lineTo(B1.x,B1.y);
-        ctx.stroke();
+    /* ===== NETWORK ===== */
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const A1=nodes[i],B1=nodes[j];
+        const dx=A1.x-B1.x, dy=A1.y-B1.y;
+        const d=Math.hypot(dx,dy);
 
-// Modif Ngasal
-    //  ctx.moveTo(A1.x,B1.y);
-    //  ctx.lineTo(B1.x,A1.y);
-    //  ctx.stroke();
+        if(d<170){
+          collisionEnergy += (170 - d) * 0.00003;
+          ctx.strokeStyle=`hsla(${(A1.h+B1.h)/2},100%,75%,0.06)`;
+          ctx.lineWidth=0.45; 
+          ctx.beginPath();
+          ctx.moveTo(A1.x,A1.y);
+          ctx.lineTo(B1.x,B1.y);
+          ctx.stroke();
 
-// Versi Brutal tapi Lemot
-/*
-    ctx.beginPath();
-
-    const steps = 6 + Math.random()*6;
-    for(let k=0;k<=steps;k++){
-    const t = k/steps;
-
-    const ox = Math.sin(t*12 + age*80 + A1.h) * 6;
-    const oy = Math.cos(t*9  + age*60 + B1.h) * 6;
-
-    const x = A1.x + (B1.x - A1.x)*t + ox;
-    const y = A1.y + (B1.y - A1.y)*t + oy;
-
-    if(k===0) ctx.moveTo(x,y);
-    else ctx.lineTo(x,y);
-}
-    ctx.stroke();
-*/
-        if(Math.random()<0.001) emit(A1,B1);
+          if(Math.random()<0.001) emit(A1,B1);
+        }
       }
     }
-  }
-  
-/* ===== TAMBAHAN SPIKE FOR EACH ===== */
-  spikes.forEach(s=>{
-  s.fibers.forEach(f=>{
-    ctx.beginPath();
-    for(let i=0;i<f.pts.length;i++){
-      const p=f.pts[i];
-      ctx.lineTo(p.x,p.y);
-    }
-    
-    // Warna doksli
-      //ctx.strokeStyle='rgba(120,255,200,0.05)';
-      //ctx.lineWidth=0.6;
-      //ctx.stroke(); 
 
-    // Warna uji coba
-      ctx.strokeStyle = `hsla(${90 + Math.sin(age*200 + f.drift)*40},90%,60%,0.04)`;
-      ctx.lineWidth = 0.4 + Math.random()*0.4;
-      ctx.stroke(); 
-  });
-});
+    /* ===== TAMBAHAN SPIKE FOR EACH ===== */
+    spikes.forEach(s=>{
+      s.fibers.forEach(f=>{
+        ctx.beginPath();
+        for(let i=0;i<f.pts.length;i++){
+          const p=f.pts[i];
+          ctx.lineTo(p.x,p.y);
+        }
+        ctx.strokeStyle = `hsla(${90 + Math.sin(age*200 + f.drift)*40},90%,60%,0.04)`;
+        ctx.lineWidth = 0.4 + Math.random()*0.4;
+        ctx.stroke(); 
+      });
+    });
 
- // Colonies
-  if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
-  // Doksli
-  //colonies.forEach(c=>{c.grow();c.draw()});
-  
-  // Uji coba
-  colonies.forEach(c=>{c.flow();c.grow();c.draw();});
+    // Colonies
+    if(Math.random()<0.0003 && colonies.length<7) colonies.push(new Colony());
+    colonies.forEach(c=>{c.flow();c.grow();c.draw();});
+    colonies=colonies.filter(c=>!c.dead()); 
 
-  colonies=colonies.filter(c=>!c.dead()); 
+    // Signals
+    signals.forEach(s=>{
+      s.t+=s.v;
+      const x=s.a.x+(s.b.x-s.a.x)*s.t;
+      const y=s.a.y+(s.b.y-s.a.y)*s.t;
+      ctx.strokeStyle=`hsla(${s.h},100%,85%,0.8)`;
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.arc(x,y,2.5,0,Math.PI*2);
+      ctx.stroke();
+    });
+    signals=signals.filter(s=>s.t<1); 
 
-  // Signals
-  signals.forEach(s=>{
-    s.t+=s.v;
-    const x=s.a.x+(s.b.x-s.a.x)*s.t;
-    const y=s.a.y+(s.b.y-s.a.y)*s.t;
-    ctx.strokeStyle=`hsla(${s.h},100%,85%,0.8)`;
-    ctx.lineWidth=1.5;
-    ctx.beginPath();
-    ctx.arc(x,y,2.5,0,Math.PI*2);
-    ctx.stroke();
-  });
-  signals=signals.filter(s=>s.t<1); 
+    // Audio ============================================================================= Audio Loop ===== //
+    if (audioStarted && A.currentTime - lastControl > 0.1) {
+      lastControl = A.currentTime;
 
-  // Audio
-// Audio
-if (audioStarted && A.currentTime - lastControl > 0.1) {
-  lastControl = A.currentTime;
-
-  // === CHAOS DARI VISUAL ===
-  const chaos = Math.min(
-    signals.length * 0.06 +
-    motionEnergy * 0.8 +
-    collisionEnergy * 1.2,
-    3
-  );
-
-  // smoothing biologis
-  smoothChaos += (chaos - smoothChaos) * 0.25;
-  smoothFlow  += (flowEnergy - smoothFlow) * 0.25; 
-
-    // === RINGS / PLUCKED RESONATORS ===
-  const scale = [0, 2, 3, 7, 10]; // pentatonic
-
-  const fire =
-  marblesAudio(smoothChaos) ||
-  Math.random() < 0.02;
-
-if (fire) {
-  const active = Math.floor(Math.random() * voices.length);
-  const spread = Math.random() < 0.3;
-
-  voices.forEach((v,i)=>{
-    if (i !== active && !(spread && Math.abs(i-active)===1)) return;
-    
-    const note =
-      110 *
-      Math.pow(
-        2,
-        scale[
-          (i + Math.floor(smoothChaos * 4)) % scale.length
-        ] / 12
+      // Chaos Dari Visual
+      const chaos = Math.min(
+        signals.length * 0.06 +
+        motionEnergy * 0.8 +
+        collisionEnergy * 1.2,
+        3
       );
 
-    v.bp.Q.setTargetAtTime(
-    14 + smoothChaos * 20 + Math.sin(age * 2 + i) * 4, A.currentTime, 1.2);
+      // Smoothing Biologis
+      smoothChaos += (chaos - smoothChaos) * 0.25;
+      smoothFlow  += (flowEnergy - smoothFlow) * 0.25; 
 
-    // === Nafas ===
-    v.bp.Q.setTargetAtTime(
-    18 + smoothChaos * 25 + Math.sin(age * 4 + i) * 6,
-    A.currentTime,
-    0.6
-    );
+      // ===== RINGS / PLUCKED RESONATORS ===== //
+      const scale = [0, 2, 3, 7, 10]; // pentatonic
 
-    const e = excite();
-    e.connect(v.bp);
-    e.start();
-    e.stop(A.currentTime + 0.2);
-    e.onended = () => e.disconnect();
+      const fire =
+      marblesAudio(smoothChaos) ||
+      Math.random() < 0.02;
 
-    v.vca.gain.cancelScheduledValues(A.currentTime);
-    v.vca.gain.setValueAtTime(0.12, A.currentTime);
-    v.vca.gain.exponentialRampToValueAtTime(
-    0.001,
-    A.currentTime + 1.4 + smoothChaos * 0.6
-);
-  });
-}
+      if (fire) {
+        const active = Math.floor(Math.random() * voices.length);
+        const spread = Math.random() < 0.3;
 
-  // === METAL / GLASS EVENTS ===
-if (collisionEnergy > 0.4 && Math.random() < 0.15) {
-  const m = metalVoices[
-    Math.floor(Math.random() * metalVoices.length)
-  ];
+        voices.forEach((v,i)=>{
+          if (i !== active && !(spread && Math.abs(i-active)===1)) return;
+    
+          const note =
+          110 * Math.pow(
+            2,scale[
+            (i + Math.floor(smoothChaos*4)) % 
+            scale.length] / 
+            12
+          );
 
-  const freq =
-    1200 +
-    collisionEnergy * 1800 +
-    Math.sin(age * 6) * 200;
+          /*
+          v.bp.Q.setTargetAtTime(
+            14 + smoothChaos * 20 + Math.sin(age*2+i)*4, 
+            A.currentTime, 
+            1.2
+          );
+          */
 
-  m.bp.frequency.setTargetAtTime(freq, A.currentTime, 0.02);
+          // ===== NAFAS ===== //
+          v.bp.Q.setTargetAtTime(
+            18 + smoothChaos * 25 + Math.sin(age*4+i)*6,
+            A.currentTime,
+            0.6
+          );
 
-  const e = excite();
-  e.connect(m.bp);
-  e.start();
-  e.stop(A.currentTime + 0.12);
-  e.onended = () => e.disconnect();
+          const e = excite();
+          e.connect(v.bp);
+          e.start();
+          e.stop(A.currentTime + 0.2);
+          e.onended = () => e.disconnect();
 
-  m.vca.gain.cancelScheduledValues(A.currentTime);
-  m.vca.gain.setValueAtTime(0.08, A.currentTime);
-  m.vca.gain.exponentialRampToValueAtTime(
-    0.001,
-    A.currentTime + 1.8
-  );
-}
+          v.vca.gain.cancelScheduledValues(A.currentTime);
+          v.vca.gain.setValueAtTime(0.12, A.currentTime);
+          v.vca.gain.exponentialRampToValueAtTime(
+            0.001,
+            A.currentTime + 1.4 + smoothChaos * 0.6
+          );
+        });
+      }
 
-  // === METAL / GLASS SPARKLES ===
-if (smoothChaos > 0.6 && Math.random() < 0.03) {
-  const m = metalVoices[Math.floor(Math.random() * metalVoices.length)];
+      // ===== METAL / GLASS EVENTS ===== //
+      if (collisionEnergy > 0.4 && Math.random() < 0.15) {
+        const m = metalVoices[
+          Math.floor(Math.random() * metalVoices.length)
+        ];
 
-  m.bp.frequency.setTargetAtTime(
-    1500 + smoothChaos * 3000,
-    A.currentTime,
-    0.2
-  );
+        const freq =
+        1200 +
+        collisionEnergy * 1800 +
+        Math.sin(age * 6) * 200;
 
-  m.vca.gain.cancelScheduledValues(A.currentTime);
-  m.vca.gain.setValueAtTime(0.05, A.currentTime);
-  m.vca.gain.exponentialRampToValueAtTime(
-    0.0001,
-    A.currentTime + 2.5
-  );
-}
+        m.bp.frequency.setTargetAtTime(freq, A.currentTime, 0.02);
 
-  // === CLOUDS / BEADS SMEAR ===
-  cloudDelay.delayTime.setTargetAtTime(
-  0.18 + Math.sin(age * 0.6) * 0.05,
-  A.currentTime,
-  0.8
-);
+        const e = excite();
+        e.connect(m.bp);
+        e.start();
+        e.stop(A.currentTime + 0.12);
+        e.onended = () => e.disconnect();
 
-  cloudFilter.frequency.setTargetAtTime(
-  900 + smoothChaos * 1200 + Math.sin(age * 0.3) * 600,
-  A.currentTime,
-  1.2
-);
+        m.vca.gain.cancelScheduledValues(A.currentTime);
+        m.vca.gain.setValueAtTime(0.08, A.currentTime);
+        m.vca.gain.exponentialRampToValueAtTime(
+          0.001,
+          A.currentTime + 1.8
+        );
+      }
 
-  cloudFeedback.gain.setTargetAtTime(
-  Math.min(0.78, 0.55 + smoothChaos * 0.18),
-  A.currentTime,
-  1.0
-);
+      // ===== METAL / GLASS SPARKLES ===== //
+      if (smoothChaos > 0.6 && Math.random() < 0.03) {
+        const m = metalVoices[Math.floor(Math.random() * metalVoices.length)];
 
-  // === MASTER MICRO BREATH ===
-  master.gain.setTargetAtTime(
-  0.28 + Math.sin(age * 0.4) * 0.05,
-  A.currentTime,
-  1.5
-); 
+        m.bp.frequency.setTargetAtTime(
+          1500 + smoothChaos * 3000,
+          A.currentTime,
+          0.2
+        );
 
-  // === AIR / BREATH MODULATION ===
-  airFilter.frequency.setTargetAtTime(
-    clamp(
-    400 + smoothFlow * 1200 + Math.sin(age * 0.2) * 200,
-    120,
-    A.sampleRate * 0.45
-  ),
-  A.currentTime,
-  2.5
-);
+        m.vca.gain.cancelScheduledValues(A.currentTime);
+        m.vca.gain.setValueAtTime(0.05, A.currentTime);
+        m.vca.gain.exponentialRampToValueAtTime(
+          0.0001,
+          A.currentTime + 2.5
+        );
+      }
 
-airGain.gain.setTargetAtTime(
-  clamp(0.015 + smoothFlow * 0.04, 0.005, 0.08),
-  A.currentTime,
-  3.0
-);
+      // ===== CLOUDS / BEADS SMEAR ===== //
+      cloudDelay.delayTime.setTargetAtTime(
+        0.18 + Math.sin(age * 0.6) * 0.05,
+        A.currentTime,
+        0.8
+      );
 
-  // === SAFETY BREATH ===
-if (smoothChaos < 0.15 && Math.random() < 0.02) {
-  const v = voices[Math.floor(Math.random() * voices.length)];
-  const e = excite();
-  e.connect(v.bp);
-  e.start();
-  e.stop(A.currentTime + 0.15);
-}
-}
-  ctx.fillStyle='rgba(180,220,255,0.45)';
-  ctx.font='12px monospace';
-  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
+      cloudFilter.frequency.setTargetAtTime(
+        900 + smoothChaos*1200 + Math.sin(age*0.3)*600,
+        A.currentTime,
+        1.2
+      );
 
-  requestAnimationFrame(loop);
-}
+      cloudFeedback.gain.setTargetAtTime(
+        Math.min(0.78, 0.55 + smoothChaos * 0.18),
+        A.currentTime,
+        1.0
+      );
 
-  // CLICK =============================================================================================================================
+      // ===== MASTER MICRO BREATH ===== //
+      master.gain.setTargetAtTime(
+        0.28 + Math.sin(age * 0.4) * 0.05,
+        A.currentTime,
+        1.5
+      ); 
+
+      // ===== AIR / BREATH MODULATION ===== //
+      airFilter.frequency.setTargetAtTime(
+        clamp(400 + smoothFlow*1200 + 
+        Math.sin(age*0.2)*200,120,
+        A.sampleRate*0.45),
+        A.currentTime,
+        2.5
+      );
+
+      airGain.gain.setTargetAtTime(
+        clamp(0.015 + smoothFlow * 0.04, 0.005, 0.08),
+        A.currentTime,
+        3.0
+      );
+
+      // ===== SAFETY BREATH ===== //
+      if (smoothChaos < 0.15 && Math.random() < 0.02) {
+        const v = voices[Math.floor(Math.random() * voices.length)];
+        const e = excite();
+        e.connect(v.bp);
+        e.start();
+        e.stop(A.currentTime + 0.15);
+      }
+    }
+    // ===== Akhir Audio Loop ===== //
+
+    ctx.fillStyle='rgba(180,220,255,0.45)';
+    ctx.font='12px monospace';
+    ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
+
+    requestAnimationFrame(loop);
+  }
+
+  // ===== CLICK ================================================================================= CLICK ===== //
   document.body.addEventListener('click', ()=>{
-  if(audioStarted) return;
+    if(audioStarted) return;
 
-  // === BUAT AUDIO CONTEXT SETELAH GESTURE ===
-  A = new (AudioContext||webkitAudioContext)();
-  lastTrigTime = A.currentTime;
-  master = A.createGain();
-  master.gain.value = 0.35;
-  master.connect(A.destination);
+    // ===== BUAT AUDIO CONTEXT SETELAH GESTURE ===== //
+    A = new (AudioContext||webkitAudioContext)();
+    lastTrigTime = A.currentTime;
+    master = A.createGain();
+    master.gain.value = 0.35;
+    master.connect(A.destination);
 
-  exciterBus = A.createGain();
-  exciterBus.gain.value = 0.6;
-  exciterBus.connect(master);
+    exciterBus = A.createGain();
+    exciterBus.gain.value = 0.6;
+    exciterBus.connect(master);
 
     A.resume();
 
-  initVoices(); 
-function createMetal(freq){
-  const bp = A.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = freq;
-  bp.Q.value = 80; // lebih tajam
+    initVoices(); 
+    function createMetal(freq){
+      const bp = A.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = freq;
+      bp.Q.value = 80; // lebih tajam
 
-  const hp = A.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 1200;
+      const hp = A.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 1200;
 
-  const vca = A.createGain();
-  vca.gain.value = 0;
+      const vca = A.createGain();
+      vca.gain.value = 0;
+      bp.connect(hp);
+      hp.connect(vca);
+      vca.connect(master);
 
-  bp.connect(hp);
-  hp.connect(vca);
-  vca.connect(master);
+      return { bp, vca };
+    }
 
-  return { bp, vca };
-}
-metalVoices.length = 0;
-for(let i=0;i<6;i++){
-  metalVoices.push(createMetal(800 + i*400));
-}
+    metalVoices.length = 0;
+    for(let i=0;i<6;i++){
+      metalVoices.push(createMetal(800 + i*400));
+    }
 
+    // ===== AMBIENT BED (Plaits-like Drone) ===== //
+    const bedOsc = A.createOscillator();
+    bedOsc.type = 'triangle';
+    bedOsc.frequency.value = 55;
 
-      // === AmbientT Bed (Plaits-like drone) ===
-      const bedOsc = A.createOscillator();
-      bedOsc.type = 'triangle';
-      bedOsc.frequency.value = 55;
+    const bedFilter = A.createBiquadFilter();
+    bedFilter.type = 'lowpass';
+    bedFilter.frequency.value = 800;
 
-      const bedFilter = A.createBiquadFilter();
-      bedFilter.type = 'lowpass';
-      bedFilter.frequency.value = 800;
+    const bedGain = A.createGain();
+    bedGain.gain.value = 0.04;
 
-      const bedGain = A.createGain();
-      bedGain.gain.value = 0.04;
+    bedOsc.connect(bedFilter);
+    bedFilter.connect(bedGain);
+    bedGain.connect(master);
 
-      bedOsc.connect(bedFilter);
-      bedFilter.connect(bedGain);
-      bedGain.connect(master);
+    bedOsc.start(); 
 
-      bedOsc.start(); 
+    // ===== AIR / BREATH PAD ===== //
+    const airNoise = A.createBufferSource();
+    const airBuf = A.createBuffer(1, A.sampleRate * 2, A.sampleRate);
+    const airData = airBuf.getChannelData(0);
 
-// === AIR / BREATH PAD ===
-const airNoise = A.createBufferSource();
-const airBuf = A.createBuffer(1, A.sampleRate * 2, A.sampleRate);
-const airData = airBuf.getChannelData(0);
+    for(let i=0;i<airData.length;i++){
+      airData[i] = (Math.random()*2-1) * 0.3;
+    }
 
-for(let i=0;i<airData.length;i++){
-  airData[i] = (Math.random()*2-1) * 0.3;
-}
+    airNoise.buffer = airBuf;
+    airNoise.loop = true; 
 
-airNoise.buffer = airBuf;
-airNoise.loop = true; 
+    const airFilter = A.createBiquadFilter();
+    airFilter.type = 'bandpass';
+    airFilter.frequency.value = 600;
+    airFilter.Q.value = 0.6;
 
-    // === AIR / BREATH ===
-const airFilter = A.createBiquadFilter();
-airFilter.type = 'bandpass';
-airFilter.frequency.value = 600;
-airFilter.Q.value = 0.6;
+    const airGain = A.createGain();
+    airGain.gain.value = 0.02;
 
-const airGain = A.createGain();
-airGain.gain.value = 0.02;
+    airNoise.connect(airFilter);
+    airFilter.connect(airGain);
+    airGain.connect(master);
 
-airNoise.connect(airFilter);
-airFilter.connect(airGain);
-airGain.connect(master);
+    airNoise.start(); 
 
-airNoise.start(); 
+    // Routingnya
+    master.connect(airFilter);
+    airFilter.connect(airGain);
+    airGain.connect(A.destination);
 
-// routing
-master.connect(airFilter);
-airFilter.connect(airGain);
-airGain.connect(A.destination);
-
-     // === CLOUDS / BEADS SMEAR ===
+    // ===== CLOUDS / BEADS SMEAR ===== //
     cloudDelay = A.createDelay();
     cloudDelay.delayTime.value = 0.18;
 
@@ -907,7 +823,7 @@ airGain.connect(A.destination);
     cloudFilter.type = 'lowpass';
     cloudFilter.frequency.value = 4200; 
 
-    // dry + wet routing (PARALLEL)
+    // Dry + Wet Routing (Parallel)
     master.connect(A.destination);
 
     master.connect(cloudDelay);
@@ -917,26 +833,23 @@ airGain.connect(A.destination);
     cloudFilter.connect(cloudFeedback);
     cloudFeedback.connect(cloudDelay);
 
-  // START SEMUA AUDIO NODE
+    // Start Semua Audio Node
+    audioStarted = true;
+    loop(0); // visual + audio mulai bersama
 
-  audioStarted = true;
-  loop(0); // visual + audio mulai bersama
-
-/*
-    // === Test Tone (Hapus setelah bunyi) ===
+    /* 
+    // ===== Test Tone (Hapus Setelah Bunyi) ===== //
     const test = A.createOscillator();
     test.frequency.value = 220;
     test.connect(master);
     test.start();
     test.stop(A.currentTime + 0.4);
-*/
+    */
 
-});
+  });
 
 </script>
 </body>
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
-
-
