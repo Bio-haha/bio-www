@@ -28,6 +28,7 @@ addEventListener('resize',resize);resize();
   let audioStarted = false;
   let exciterBus;
   let voices = []; 
+  let metalVoices = [];
   
   let lastControl = 0;
   let smoothChaos = 0;
@@ -79,6 +80,7 @@ addEventListener('resize',resize);resize();
 
   function initVoices(){
   voices.length = 0;
+  metalVoices.length = 0;
 
   function createResonator(freq){
   const bp = A.createBiquadFilter();
@@ -98,6 +100,22 @@ addEventListener('resize',resize);resize();
 // polyphonic resonator bank
 for(let i=0;i<10;i++){
   voices.push(createResonator(110 + i*70));
+}
+
+// === METAL / GLASS RESONATORS ===
+for(let i=0;i<6;i++){
+  const bp = A.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 1200 + i * 900;
+  bp.Q.value = 80; // tajam = metal
+
+  const vca = A.createGain();
+  vca.gain.value = 0;
+
+  bp.connect(vca);
+  vca.connect(master);
+
+  metalVoices.push({ bp, vca });
 }
 }
 
@@ -705,6 +723,23 @@ if (collisionEnergy > 0.4 && Math.random() < 0.15) {
   );
 }
 
+  // === METAL / GLASS SPARKLES ===
+if (smoothChaos > 0.6 && Math.random() < 0.03) {
+  const m = metalVoices[Math.floor(Math.random() * metalVoices.length)];
+
+  m.bp.frequency.setTargetAtTime(
+    1500 + smoothChaos * 3000,
+    A.currentTime,
+    0.2
+  );
+
+  m.vca.gain.cancelScheduledValues(A.currentTime);
+  m.vca.gain.setValueAtTime(0.05, A.currentTime);
+  m.vca.gain.exponentialRampToValueAtTime(
+    0.0001,
+    A.currentTime + 2.5
+  );
+}
 
   // === CLOUDS / BEADS SMEAR ===
   cloudDelay.delayTime.setTargetAtTime(
@@ -762,7 +797,7 @@ airGain.gain.setTargetAtTime(
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIO WORLD WIDE WEB — Living Microscopic Network 2026',12,h-14);
+  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -900,8 +935,3 @@ airNoise.start();
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
-
-
-
-
-
