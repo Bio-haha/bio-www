@@ -14,11 +14,15 @@ canvas{display:block}
 <canvas id="c"></canvas>
 
 <script>
+  function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let w,h;
 function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
-addEventListener('resize',resize);resize();
+addEventListener('resize',resize);resize(); 
 
 /* ===== TIME ===== */
   let age=0, phase=0;
@@ -28,7 +32,6 @@ addEventListener('resize',resize);resize();
   let audioStarted = false;
   let exciterBus;
   let voices = []; 
-  let metalVoices = [];
   
   let lastControl = 0;
   let smoothChaos = 0;
@@ -767,41 +770,40 @@ if (smoothChaos > 0.6 && Math.random() < 0.03) {
   1.5
 ); 
 
-  // === AIR / BREATH LAYER ===
-airFilter = A.createBiquadFilter();
-airFilter.type = 'bandpass';
-airFilter.frequency.value = 600;
-airFilter.Q.value = 0.6;
-
-airGain = A.createGain();
-airGain.gain.value = 0.02;
-
-// routing: master → air → output
-master.connect(airFilter);
-airFilter.connect(airGain);
-airGain.connect(A.destination);
-
   // === AIR / BREATH MODULATION ===
-airFilter.frequency.setTargetAtTime(
-  400 + smoothFlow * 1200 + Math.sin(age * 0.2) * 200,
+  airFilter.frequency.setTargetAtTime(
+    clamp(
+    400 + smoothFlow * 1200 + Math.sin(age * 0.2) * 200,
+    120,
+    A.sampleRate * 0.45
+  ),
   A.currentTime,
   2.5
 );
 
 airGain.gain.setTargetAtTime(
-  0.015 + smoothFlow * 0.04,
+  clamp(0.015 + smoothFlow * 0.04, 0.005, 0.08),
   A.currentTime,
   3.0
 );
+
+  // === SAFETY BREATH ===
+if (smoothChaos < 0.15 && Math.random() < 0.02) {
+  const v = voices[Math.floor(Math.random() * voices.length)];
+  const e = excite();
+  e.connect(v.bp);
+  e.start();
+  e.stop(A.currentTime + 0.15);
 }
 
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
+  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network X',12,h-14);
 
   requestAnimationFrame(loop);
 }
 
+  // CLICK =============================================================================================================================
   document.body.addEventListener('click', ()=>{
   if(audioStarted) return;
 
@@ -816,13 +818,11 @@ airGain.gain.setTargetAtTime(
   exciterBus.gain.value = 0.6;
   exciterBus.connect(master);
 
-    //metal
-    let metalVoices = [];
-
   initVoices(); 
 
-      // Metal
-metalVoices.length = 0;
+    //metal
+    let metalVoices = [];
+    metalVoices.length = 0;
 
 function createMetal(freq){
   const bp = A.createBiquadFilter();
@@ -877,8 +877,9 @@ for(let i=0;i<airData.length;i++){
 }
 
 airNoise.buffer = airBuf;
-airNoise.loop = true;
+airNoise.loop = true; 
 
+    // === AIR / BREATH ===
 const airFilter = A.createBiquadFilter();
 airFilter.type = 'bandpass';
 airFilter.frequency.value = 600;
@@ -891,7 +892,12 @@ airNoise.connect(airFilter);
 airFilter.connect(airGain);
 airGain.connect(master);
 
-airNoise.start();
+airNoise.start(); 
+
+// routing
+master.connect(airFilter);
+airFilter.connect(airGain);
+airGain.connect(A.destination);
 
      // === CLOUDS / BEADS SMEAR ===
     cloudDelay = A.createDelay();
