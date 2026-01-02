@@ -746,23 +746,27 @@
     // ===== BUAT AUDIO CONTEXT SETELAH GESTURE ===== //
     A = new (AudioContext||webkitAudioContext)();
 
+    // 1. MASTER
+    master = A.createGain();
+    master.gain.value = 0.35;
+    master.connect(A.destination);
+
+    // 2. EXCITER BUS
+    exciterBus = A.createGain();
+    exciterBus.gain.value = 0.6;
+    exciterBus.connect(master);
+
+    // 3. AIR FILTER
     airFilter = A.createBiquadFilter();
     airFilter.type = 'bandpass';
     airFilter.frequency.value = 600;
     airFilter.Q.value = 0.6;
 
-    // routing
+    // routing AIR
     exciterBus.connect(airFilter);
     airFilter.connect(master);
     
     lastTrigTime = A.currentTime;
-    master = A.createGain();
-    master.gain.value = 0.35;
-    master.connect(A.destination);
-
-    exciterBus = A.createGain();
-    exciterBus.gain.value = 0.6;
-    exciterBus.connect(master);
 
     A.resume();
 
@@ -786,7 +790,6 @@
       return { bp, vca };
     }
 
-    metalVoices.length = 0;
     for(let i=0;i<6;i++){
       metalVoices.push(createMetal(800 + i*400));
     }
@@ -821,10 +824,12 @@
     airNoise.buffer = airBuf;
     airNoise.loop = true; 
 
-    const airGain = A.createGain();
+    airGain = A.createGain();
     airGain.gain.value = 0.02;
 
     airNoise.start(); 
+    airNoise.connect(airGain);
+    airGain.connect(airFilter);
 
     // Routingnya
     master.connect(airFilter);
@@ -840,9 +845,6 @@
     cloudFilter = A.createBiquadFilter();
     cloudFilter.type = 'lowpass';
     cloudFilter.frequency.value = 4200; 
-
-    // Dry + Wet Routing (Parallel)
-    master.connect(A.destination);
 
     master.connect(cloudDelay);
     cloudDelay.connect(cloudFilter);
