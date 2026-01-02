@@ -567,19 +567,31 @@
       smoothFlow  += (flowEnergy - smoothFlow) * 0.25; 
 
       // === AIR MODULATION (BREATH) ===
-      if (airFilter) {
+      if (airFilter && airGain) {
+        const airFreq = clamp(
+        500 +
+        smoothFlow * 800 +
+        Math.sin(age * 0.25) * 150,
+        120,
+        A.sampleRate * 0.45
+        );
+
         airFilter.frequency.setTargetAtTime(
-          600 +               // frekuensi dasar napas
-          smoothFlow * 900 +  // aliran visual → udara
-          Math.sin(age * 0.3) * 200, // osilasi lambat
+          airFreq,
           A.currentTime,
-          1.2
+          1.8
         );
 
         airFilter.Q.setTargetAtTime(
-          0.4 + smoothChaos * 1.2,
+          0.5 + smoothChaos * 1.2,
           A.currentTime,
-          1.5
+          2.0
+        );
+
+        airGain.gain.setTargetAtTime(
+          clamp(0.012 + smoothFlow * 0.03, 0.004, 0.05),
+          A.currentTime,
+          3.0
         );
       }
 
@@ -641,10 +653,13 @@
           Math.floor(Math.random() * metalVoices.length)
         ];
 
-        const freq =
-        1200 +
-        collisionEnergy * 1800 +
-        Math.sin(age * 6) * 200;
+        const freq = clamp(
+          1000 +
+          collisionEnergy * 1200 +
+          Math.sin(age * 6) * 180,
+          400,
+          8000
+        );
 
         m.bp.frequency.setTargetAtTime(freq, A.currentTime, 0.02);
 
@@ -694,9 +709,9 @@
       );
 
       cloudFeedback.gain.setTargetAtTime(
-        0.45 + smoothChaos * 0.25,
+        clamp(0.4 + smoothChaos * 0.18, 0.2, 0.82),
         A.currentTime,
-        0.6
+        0.8
       );
 
       // ===== MASTER MICRO BREATH ===== //
@@ -705,21 +720,6 @@
         A.currentTime,
         1.5
       ); 
-
-      // ===== AIR / BREATH MODULATION ===== //
-      airFilter.frequency.setTargetAtTime(
-        clamp(400 + smoothFlow*1200 + 
-        Math.sin(age*0.2)*200,120,
-        A.sampleRate*0.45),
-        A.currentTime,
-        2.5
-      );
-
-      airGain.gain.setTargetAtTime(
-        clamp(0.015 + smoothFlow * 0.04, 0.005, 0.08),
-        A.currentTime,
-        3.0
-      );
 
       // ===== SAFETY BREATH ===== //
       if (smoothChaos < 0.15 && Math.random() < 0.02) {
@@ -734,7 +734,7 @@
 
     ctx.fillStyle='rgba(180,220,255,0.45)';
     ctx.font='12px monospace';
-    ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network HA',12,h-14);
+    ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
 
     requestAnimationFrame(loop);
   }
@@ -830,10 +830,6 @@
     airNoise.start(); 
     airNoise.connect(airGain);
     airGain.connect(airFilter);
-
-    // Routingnya
-    master.connect(airFilter);
-    airGain.connect(A.destination);
 
     // ===== CLOUDS / BEADS SMEAR ===== //
     cloudDelay = A.createDelay();
