@@ -32,13 +32,13 @@ addEventListener('resize',resize);resize();
   let audioStarted = false;
   let exciterBus;
   let voices = []; 
+  let metalVoices = [];
+  let cloudDelay, cloudFeedback, cloudFilter;
+  let airFilter, airGain;
   
   let lastControl = 0;
   let smoothChaos = 0;
   let smoothFlow = 0;
-
-  let cloudDelay, cloudFeedback, cloudFilter;
-  let airFilter, airGain;
 
   function excite() {
   const b = A.createBuffer(1, A.sampleRate * 0.12, A.sampleRate);
@@ -798,7 +798,7 @@ if (smoothChaos < 0.15 && Math.random() < 0.02) {
 }
   ctx.fillStyle='rgba(180,220,255,0.45)';
   ctx.font='12px monospace';
-  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network X',12,h-14);
+  ctx.fillText('BIOHAHA - BIO WORLD WIDE WEB - Living Microscopic Network',12,h-14);
 
   requestAnimationFrame(loop);
 }
@@ -818,12 +818,9 @@ if (smoothChaos < 0.15 && Math.random() < 0.02) {
   exciterBus.gain.value = 0.6;
   exciterBus.connect(master);
 
+    A.resume();
+
   initVoices(); 
-
-    //metal
-    let metalVoices = [];
-    metalVoices.length = 0;
-
 function createMetal(freq){
   const bp = A.createBiquadFilter();
   bp.type = 'bandpass';
@@ -843,7 +840,7 @@ function createMetal(freq){
 
   return { bp, vca };
 }
-
+metalVoices.length = 0;
 for(let i=0;i<6;i++){
   metalVoices.push(createMetal(800 + i*400));
 }
@@ -941,4 +938,5 @@ airGain.connect(A.destination);
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
