@@ -34,6 +34,7 @@ addEventListener('resize',resize);resize();
   let smoothFlow = 0;
 
   let cloudDelay, cloudFeedback, cloudFilter;
+  let airFilter, airGain;
 
   function excite() {
   const b = A.createBuffer(1, A.sampleRate * 0.12, A.sampleRate);
@@ -729,7 +730,21 @@ if (collisionEnergy > 0.4 && Math.random() < 0.15) {
   0.28 + Math.sin(age * 0.4) * 0.05,
   A.currentTime,
   1.5
-);
+); 
+
+  // === AIR / BREATH LAYER ===
+airFilter = A.createBiquadFilter();
+airFilter.type = 'bandpass';
+airFilter.frequency.value = 600;
+airFilter.Q.value = 0.6;
+
+airGain = A.createGain();
+airGain.gain.value = 0.02;
+
+// routing: master → air → output
+master.connect(airFilter);
+airFilter.connect(airGain);
+airGain.connect(A.destination);
 
   // === AIR / BREATH MODULATION ===
 airFilter.frequency.setTargetAtTime(
@@ -885,6 +900,7 @@ airNoise.start();
 </html> 
 
 // Bandung, Natal 25 Desember 2025 
+
 
 
 
