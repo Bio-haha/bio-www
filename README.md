@@ -10,4 +10,4 @@ Bio WWW — A living web organism - Bandung Climate <br>
   Try Try Try
 </a>
 
-Tap or click anywhere on the screen to activate sound
+Tap or click anywhere on the screen to start
