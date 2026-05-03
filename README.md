@@ -2,7 +2,7 @@
 Bio World Wide Web – Generative Climate Organism. 
 "A living web organism that metabolizes Indonesian climate data into fungal-neural-plant tissue, continuously growing, decaying, and regenerating without endpoint."
 
-![bandung](https://github.com/bio-haha.io/bio-network/generated/bio-www.png)
+![bandung](https://github.com/Bio-haha/bio-network/tree/main/generated/bio-www.png)
 Bio WWW — A living web organism - Bandung Climate <br>
 
 
